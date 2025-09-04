@@ -8,6 +8,10 @@ import { MapPin, Phone, Star, Heart, Search, Filter, ArrowLeft } from "lucide-re
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import holsteinCow from "@/assets/holstein-cow.jpg";
+import murrahBuffalo from "@/assets/murrah-buffalo.jpg";
+import boerGoat from "@/assets/boer-goat.jpg";
+import girBull from "@/assets/gir-bull.jpg";
 
 const Animals = () => {
   const { user } = useAuth();
@@ -32,7 +36,7 @@ const Animals = () => {
       phone: "+91-98765-43210",
       vaccination: "Complete",
       rating: 4.8,
-      image: "/placeholder.svg"
+      image: holsteinCow
     },
     {
       id: 2,
@@ -48,7 +52,7 @@ const Animals = () => {
       phone: "+91-87654-32109",
       vaccination: "Complete",
       rating: 4.6,
-      image: "/placeholder.svg"
+      image: murrahBuffalo
     },
     {
       id: 3,
@@ -64,7 +68,7 @@ const Animals = () => {
       phone: "+91-76543-21098",
       vaccination: "Complete",
       rating: 4.5,
-      image: "/placeholder.svg"
+      image: boerGoat
     },
     {
       id: 4,
@@ -80,7 +84,7 @@ const Animals = () => {
       phone: "+91-65432-10987",
       vaccination: "Complete",
       rating: 4.9,
-      image: "/placeholder.svg"
+      image: girBull
     }
   ];
 
@@ -181,6 +185,27 @@ const Animals = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAnimals.map((animal) => (
             <Card key={animal.id} className="overflow-hidden shadow-soft hover:shadow-medium transition-shadow">
+              <div className="relative h-48 overflow-hidden">
+                <img 
+                  src={animal.image} 
+                  alt={`${animal.type} - ${animal.breed}`}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute top-2 right-2 flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleFavorite(animal.id)}
+                    className="bg-white/80 hover:bg-white/90"
+                  >
+                    <Heart className="h-4 w-4" />
+                  </Button>
+                  <div className="flex items-center bg-white/90 rounded-full px-2 py-1">
+                    <Star className="h-4 w-4 text-harvest-gold mr-1" />
+                    <span className="text-sm font-medium">{animal.rating}</span>
+                  </div>
+                </div>
+              </div>
               <CardHeader className="pb-4">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
@@ -191,19 +216,6 @@ const Animals = () => {
                     <CardDescription className="text-muted-foreground">
                       {animal.gender} • {animal.age}
                     </CardDescription>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleFavorite(animal.id)}
-                    >
-                      <Heart className="h-4 w-4" />
-                    </Button>
-                    <div className="flex items-center">
-                      <Star className="h-4 w-4 text-harvest-gold mr-1" />
-                      <span className="text-sm font-medium">{animal.rating}</span>
-                    </div>
                   </div>
                 </div>
               </CardHeader>
