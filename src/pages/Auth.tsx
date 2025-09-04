@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Leaf, Mail, Lock, User, Phone, MapPin } from 'lucide-react';
+import { Leaf, Mail, Lock, User, Phone, MapPin, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
@@ -152,6 +152,14 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
+      <Button
+        variant="ghost"
+        className="absolute top-4 left-4"
+        onClick={() => navigate('/')}
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back to Home
+      </Button>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center w-16 h-16 bg-gradient-primary rounded-xl mx-auto mb-4">

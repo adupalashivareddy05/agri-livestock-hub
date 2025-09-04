@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Phone, Wheat, Search, DollarSign, TrendingUp, Calendar } from "lucide-react";
+import { MapPin, Phone, Wheat, Search, DollarSign, TrendingUp, Calendar, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -145,6 +145,16 @@ const Crops = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
+          <div className="flex items-center mb-4">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/')}
+              className="mr-4"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Home
+            </Button>
+          </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Crop Marketplace</h1>
           <p className="text-muted-foreground">Real-time crop rates from verified traders across India</p>
         </div>
