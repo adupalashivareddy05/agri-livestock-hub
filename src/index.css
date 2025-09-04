@@ -2,41 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Agricultural Marketplace Design System - All colors MUST be HSL */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Agricultural color palette */
+    --background: 120 20% 98%;
+    --foreground: 120 10% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 120 10% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 120 10% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Deep agricultural green */
+    --primary: 120 60% 25%;
+    --primary-foreground: 0 0% 98%;
+    --primary-light: 120 45% 35%;
+    --primary-dark: 120 70% 20%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Golden harvest colors */
+    --secondary: 45 85% 85%;
+    --secondary-foreground: 120 60% 25%;
+    --harvest-gold: 42 78% 55%;
+    --harvest-gold-foreground: 120 60% 25%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Fresh accent green */
+    --accent: 110 40% 90%;
+    --accent-foreground: 120 60% 25%;
+    --fresh-green: 110 50% 45%;
+    --fresh-green-foreground: 0 0% 98%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --muted: 120 15% 92%;
+    --muted-foreground: 120 8% 45%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 120 15% 88%;
+    --input: 120 15% 92%;
+    --ring: 120 60% 25%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* Agricultural gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-light)));
+    --gradient-harvest: linear-gradient(135deg, hsl(var(--harvest-gold)), hsl(var(--secondary)));
+    --gradient-fresh: linear-gradient(135deg, hsl(var(--fresh-green)), hsl(var(--accent)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--fresh-green)) 100%);
+
+    /* Shadows */
+    --shadow-soft: 0 4px 12px hsl(var(--primary) / 0.08);
+    --shadow-medium: 0 8px 24px hsl(var(--primary) / 0.12);
+    --shadow-strong: 0 16px 40px hsl(var(--primary) / 0.16);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
     --sidebar-background: 0 0% 98%;
 
