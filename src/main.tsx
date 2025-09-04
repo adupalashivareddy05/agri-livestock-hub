@@ -10,6 +10,7 @@ import Index from './pages/Index'
 import Auth from './pages/Auth'
 import Dashboard from './pages/Dashboard'
 import Animals from './pages/Animals'
+import AddAnimal from './pages/AddAnimal'
 import Crops from './pages/Crops'
 import NotFound from './pages/NotFound'
 
@@ -20,14 +21,15 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/animals" element={<Animals />} />
-            <Route path="/crops" element={<Crops />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/animals" element={<Animals />} />
+              <Route path="/add-animal" element={<AddAnimal />} />
+              <Route path="/crops" element={<Crops />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
           <Toaster />
         </AuthProvider>
       </BrowserRouter>
