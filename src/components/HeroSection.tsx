@@ -1,8 +1,32 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Users, Wheat, TrendingUp } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import heroImage from "@/assets/hero-agriculture.jpg";
 
 const HeroSection = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleTradeClick = (type: 'animals' | 'crops') => {
+    if (!user) {
+      toast({
+        title: "Please sign in",
+        description: "You need to sign in to start trading",
+        variant: "destructive",
+      });
+      navigate('/auth');
+      return;
+    }
+    // For now, just show a toast - in future we can navigate to trading pages
+    toast({
+      title: "Feature Coming Soon",
+      description: `${type === 'animals' ? 'Animal' : 'Crop'} trading interface is being developed`,
+    });
+  };
+
   return (
     <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
       {/* Background Image with Overlay */}
@@ -29,12 +53,21 @@ const HeroSection = () => {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-          <Button size="lg" className="bg-white text-primary hover:bg-white/90 shadow-medium">
+          <Button 
+            size="lg" 
+            className="bg-white text-primary hover:bg-white/90 shadow-medium"
+            onClick={() => handleTradeClick('animals')}
+          >
             <Users className="h-5 w-5 mr-2" />
             Trade Animals
             <ArrowRight className="h-5 w-5 ml-2" />
           </Button>
-          <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary">
+          <Button 
+            size="lg" 
+            variant="outline" 
+            className="border-white text-white hover:bg-white hover:text-primary"
+            onClick={() => handleTradeClick('crops')}
+          >
             <Wheat className="h-5 w-5 mr-2" />
             Trade Crops
             <ArrowRight className="h-5 w-5 ml-2" />

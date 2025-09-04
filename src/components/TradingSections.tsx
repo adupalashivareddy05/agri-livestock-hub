@@ -2,8 +2,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Phone, Star, Heart, Wheat, Users, DollarSign, Calendar, TrendingUp } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const TradingSections = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleButtonClick = (action: string) => {
+    if (!user) {
+      toast({
+        title: "Please sign in",
+        description: "You need to sign in to access this feature",
+        variant: "destructive",
+      });
+      navigate('/auth');
+      return;
+    }
+    
+    toast({
+      title: "Feature Coming Soon",
+      description: `${action} feature is being developed`,
+    });
+  };
   // Sample animal listings
   const animalListings = [
     {
@@ -128,7 +151,10 @@ const TradingSections = () => {
                       <p className="text-2xl font-bold text-primary">{animal.price}</p>
                       <p className="text-sm text-muted-foreground">By {animal.seller}</p>
                     </div>
-                    <Button className="bg-gradient-primary">
+                    <Button 
+                      className="bg-gradient-primary"
+                      onClick={() => handleButtonClick('Contact seller')}
+                    >
                       <Phone className="h-4 w-4 mr-2" />
                       Contact
                     </Button>
@@ -139,7 +165,12 @@ const TradingSections = () => {
           </div>
 
           <div className="text-center">
-            <Button variant="outline" size="lg" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+              onClick={() => handleButtonClick('View all animals')}
+            >
               View All Animals
             </Button>
           </div>
@@ -196,7 +227,10 @@ const TradingSections = () => {
                     </div>
                   </div>
 
-                  <Button className="w-full bg-gradient-harvest text-harvest-gold-foreground">
+                  <Button 
+                    className="w-full bg-gradient-harvest text-harvest-gold-foreground"
+                    onClick={() => handleButtonClick('Get quote')}
+                  >
                     <DollarSign className="h-4 w-4 mr-2" />
                     Get Quote
                   </Button>
@@ -206,7 +240,12 @@ const TradingSections = () => {
           </div>
 
           <div className="text-center">
-            <Button variant="outline" size="lg" className="border-harvest-gold text-harvest-gold hover:bg-harvest-gold hover:text-harvest-gold-foreground">
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="border-harvest-gold text-harvest-gold hover:bg-harvest-gold hover:text-harvest-gold-foreground"
+              onClick={() => handleButtonClick('View all rates')}
+            >
               View All Rates
             </Button>
           </div>
