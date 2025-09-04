@@ -11,11 +11,11 @@ const TradingSections = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleButtonClick = (action: string) => {
+  const handleContactSeller = (animal: any) => {
     if (!user) {
       toast({
         title: "Please sign in",
-        description: "You need to sign in to access this feature",
+        description: "You need to sign in to contact sellers",
         variant: "destructive",
       });
       navigate('/auth');
@@ -23,9 +23,30 @@ const TradingSections = () => {
     }
     
     toast({
-      title: "Feature Coming Soon",
-      description: `${action} feature is being developed`,
+      title: "Contact Information",
+      description: `Contact ${animal.seller} at ${animal.phone}`,
     });
+  };
+
+  const handleGetQuote = (crop: any) => {
+    if (!user) {
+      toast({
+        title: "Please sign in",
+        description: "You need to sign in to get quotes",
+        variant: "destructive",
+      });
+      navigate('/auth');
+      return;
+    }
+    
+    toast({
+      title: "Quote Request",
+      description: `Quote requested for ${crop.crop} from ${crop.trader}`,
+    });
+  };
+
+  const handleViewAll = (type: 'animals' | 'crops') => {
+    navigate(`/${type}`);
   };
   // Sample animal listings
   const animalListings = [
@@ -153,7 +174,7 @@ const TradingSections = () => {
                     </div>
                     <Button 
                       className="bg-gradient-primary"
-                      onClick={() => handleButtonClick('Contact seller')}
+                      onClick={() => handleContactSeller(animal)}
                     >
                       <Phone className="h-4 w-4 mr-2" />
                       Contact
@@ -169,7 +190,7 @@ const TradingSections = () => {
               variant="outline" 
               size="lg" 
               className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-              onClick={() => handleButtonClick('View all animals')}
+              onClick={() => handleViewAll('animals')}
             >
               View All Animals
             </Button>
@@ -229,7 +250,7 @@ const TradingSections = () => {
 
                   <Button 
                     className="w-full bg-gradient-harvest text-harvest-gold-foreground"
-                    onClick={() => handleButtonClick('Get quote')}
+                    onClick={() => handleGetQuote(crop)}
                   >
                     <DollarSign className="h-4 w-4 mr-2" />
                     Get Quote
@@ -244,7 +265,7 @@ const TradingSections = () => {
               variant="outline" 
               size="lg" 
               className="border-harvest-gold text-harvest-gold hover:bg-harvest-gold hover:text-harvest-gold-foreground"
-              onClick={() => handleButtonClick('View all rates')}
+              onClick={() => handleViewAll('crops')}
             >
               View All Rates
             </Button>

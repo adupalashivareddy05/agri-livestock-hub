@@ -1,8 +1,35 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Shield, User, ShoppingCart, Tractor, Store, Users } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const UserRoles = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleJoinRole = (role: string) => {
+    if (!user) {
+      toast({
+        title: "Please sign in",
+        description: "You need to sign in to join as a role",
+        variant: "destructive",
+      });
+      navigate('/auth');
+      return;
+    }
+    
+    toast({
+      title: "Role Selection",
+      description: `Joined as ${role}! Visit your dashboard to start.`,
+    });
+    
+    setTimeout(() => {
+      navigate('/dashboard');
+    }, 1500);
+  };
   const animalRoles = [
     {
       title: "Seller",
@@ -88,7 +115,10 @@ const UserRoles = () => {
                     ))}
                   </ul>
                   
-                  <Button className="w-full bg-gradient-primary">
+                  <Button 
+                    className="w-full bg-gradient-primary"
+                    onClick={() => handleJoinRole(role.title)}
+                  >
                     Join as {role.title}
                   </Button>
                 </CardContent>
@@ -131,7 +161,10 @@ const UserRoles = () => {
                     ))}
                   </ul>
                   
-                  <Button className="w-full bg-gradient-harvest text-harvest-gold-foreground">
+                  <Button 
+                    className="w-full bg-gradient-harvest text-harvest-gold-foreground"
+                    onClick={() => handleJoinRole(role.title)}
+                  >
                     Join as {role.title}
                   </Button>
                 </CardContent>

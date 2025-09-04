@@ -8,6 +8,9 @@ import './index.css'
 
 import Index from './pages/Index'
 import Auth from './pages/Auth'
+import Dashboard from './pages/Dashboard'
+import Animals from './pages/Animals'
+import Crops from './pages/Crops'
 import NotFound from './pages/NotFound'
 
 const queryClient = new QueryClient()
@@ -20,6 +23,9 @@ createRoot(document.getElementById('root')!).render(
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/animals" element={<Animals />} />
+            <Route path="/crops" element={<Crops />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />

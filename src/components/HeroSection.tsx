@@ -11,20 +11,7 @@ const HeroSection = () => {
   const { toast } = useToast();
 
   const handleTradeClick = (type: 'animals' | 'crops') => {
-    if (!user) {
-      toast({
-        title: "Please sign in",
-        description: "You need to sign in to start trading",
-        variant: "destructive",
-      });
-      navigate('/auth');
-      return;
-    }
-    // For now, just show a toast - in future we can navigate to trading pages
-    toast({
-      title: "Feature Coming Soon",
-      description: `${type === 'animals' ? 'Animal' : 'Crop'} trading interface is being developed`,
-    });
+    navigate(`/${type}`);
   };
 
   return (
