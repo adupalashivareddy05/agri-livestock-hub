@@ -382,33 +382,35 @@ const AddAnimal = () => {
                   />
                 </div>
 
-                {/* Milk Production (for dairy animals) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="milk_capacity_liters">Milk Capacity (Liters/day)</Label>
-                    <Input
-                      id="milk_capacity_liters"
-                      type="number"
-                      value={formData.milk_capacity_liters}
-                      onChange={(e) => handleInputChange('milk_capacity_liters', e.target.value)}
-                      placeholder="e.g., 25"
-                    />
-                  </div>
+                {/* Milk Production (for female dairy animals only) */}
+                {formData.gender === 'female' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="milk_capacity_liters">Milk Capacity (Liters/day)</Label>
+                      <Input
+                        id="milk_capacity_liters"
+                        type="number"
+                        value={formData.milk_capacity_liters}
+                        onChange={(e) => handleInputChange('milk_capacity_liters', e.target.value)}
+                        placeholder="e.g., 25"
+                      />
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="lactation_status">Lactation Status</Label>
-                    <Select value={formData.lactation_status} onValueChange={(value) => handleInputChange('lactation_status', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="lactating">Lactating</SelectItem>
-                        <SelectItem value="dry">Dry</SelectItem>
-                        <SelectItem value="pregnant">Pregnant</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                      <Label htmlFor="lactation_status">Lactation Status</Label>
+                      <Select value={formData.lactation_status} onValueChange={(value) => handleInputChange('lactation_status', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="lactating">Lactating</SelectItem>
+                          <SelectItem value="dry">Dry</SelectItem>
+                          <SelectItem value="pregnant">Pregnant</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Additional Details */}
                 <div className="space-y-2">
