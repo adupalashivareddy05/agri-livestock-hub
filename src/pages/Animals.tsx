@@ -61,10 +61,22 @@ const Animals = () => {
     }
     
     const sellerName = animal.seller_profile?.full_name || 'Seller';
-    const phone = animal.seller_profile?.phone_number || 'Phone not available';
+    const phone = animal.seller_profile?.phone_number;
+    
+    if (!phone) {
+      toast({
+        title: "Contact Information Unavailable",
+        description: "Phone number not provided by seller",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create a more prominent display with phone number
     toast({
-      title: "Contact Information",
-      description: `Contact ${sellerName} at ${phone}`,
+      title: `📞 Contact ${sellerName}`,
+      description: `Phone: ${phone}`,
+      duration: 8000,
     });
   };
 
@@ -240,11 +252,18 @@ const Animals = () => {
                 </div>
 
                 {animal.vaccination_details && (
-                  <div className="flex items-center text-sm">
-                    <span className="text-muted-foreground mr-2">Vaccination:</span>
-                    <Badge variant="outline" className="text-green-600 border-green-600">
-                      Vaccinated
-                    </Badge>
+                  <div className="space-y-2">
+                    <div className="flex items-center text-sm">
+                      <span className="text-muted-foreground mr-2">Vaccination:</span>
+                      <Badge variant="outline" className="text-green-600 border-green-600">
+                        Vaccinated
+                      </Badge>
+                    </div>
+                    {animal.images?.find((img: any) => img.image_type === 'vaccination') && (
+                      <div className="text-xs text-muted-foreground">
+                        📋 Certificate available
+                      </div>
+                    )}
                   </div>
                 )}
 

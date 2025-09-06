@@ -18,6 +18,8 @@ const AddAnimal = () => {
   const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [vaccinationImageFile, setVaccinationImageFile] = useState<File | null>(null);
+  const [vaccinationImagePreview, setVaccinationImagePreview] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     animal_type: '',
@@ -49,6 +51,18 @@ const AddAnimal = () => {
     }
   };
 
+  const handleVaccinationImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setVaccinationImageFile(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setVaccinationImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const uploadImage = async (animalId: string): Promise<string | null> => {
     if (!imageFile || !user) return null;
 
@@ -61,6 +75,28 @@ const AddAnimal = () => {
 
     if (uploadError) {
       console.error('Error uploading image:', uploadError);
+      return null;
+    }
+
+    const { data } = supabase.storage
+      .from('animal-images')
+      .getPublicUrl(fileName);
+
+    return data.publicUrl;
+  };
+
+  const uploadVaccinationImage = async (animalId: string): Promise<string | null> => {
+    if (!vaccinationImageFile || !user) return null;
+
+    const fileExt = vaccinationImageFile.name.split('.').pop();
+    const fileName = `${user.id}/${animalId}-vaccination-${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('animal-images')
+      .upload(fileName, vaccinationImageFile);
+
+    if (uploadError) {
+      console.error('Error uploading vaccination image:', uploadError);
       return null;
     }
 
@@ -114,7 +150,7 @@ const AddAnimal = () => {
         throw animalError;
       }
 
-      // Upload image if provided
+      // Upload main image if provided
       if (imageFile && animal) {
         const imageUrl = await uploadImage(animal.id);
         
@@ -131,6 +167,27 @@ const AddAnimal = () => {
 
           if (imageError) {
             console.error('Error saving image record:', imageError);
+          }
+        }
+      }
+
+      // Upload vaccination image if provided
+      if (vaccinationImageFile && animal) {
+        const vaccinationImageUrl = await uploadVaccinationImage(animal.id);
+        
+        if (vaccinationImageUrl) {
+          // Create vaccination image record
+          const { error: vaccinationImageError } = await supabase
+            .from('animal_images')
+            .insert({
+              animal_id: animal.id,
+              image_url: vaccinationImageUrl,
+              image_type: 'vaccination',
+              description: 'Vaccination certificate'
+            });
+
+          if (vaccinationImageError) {
+            console.error('Error saving vaccination image record:', vaccinationImageError);
           }
         }
       }
@@ -374,6 +431,55 @@ const AddAnimal = () => {
                     placeholder="List vaccinations and medical history"
                     rows={2}
                   />
+                </div>
+
+                {/* Vaccination Certificate Upload */}
+                <div className="space-y-2">
+                  <Label htmlFor="vaccination_image">Vaccination Certificate Photo</Label>
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                    {vaccinationImagePreview ? (
+                      <div className="space-y-4">
+                        <img 
+                          src={vaccinationImagePreview} 
+                          alt="Vaccination certificate preview" 
+                          className="w-full h-32 object-cover rounded-lg mx-auto"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setVaccinationImageFile(null);
+                            setVaccinationImagePreview(null);
+                          }}
+                        >
+                          Remove Certificate
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <ImageIcon className="h-8 w-8 text-muted-foreground mx-auto" />
+                        <div>
+                          <Label htmlFor="vaccination_image" className="cursor-pointer">
+                            <div className="flex items-center justify-center space-x-2 text-primary hover:text-primary/80">
+                              <Upload className="h-4 w-4" />
+                              <span>Upload Vaccination Certificate</span>
+                            </div>
+                          </Label>
+                          <Input
+                            id="vaccination_image"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleVaccinationImageUpload}
+                            className="hidden"
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Upload vaccination certificate or medical records
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Breeding Information */}
