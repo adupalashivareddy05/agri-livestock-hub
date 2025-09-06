@@ -18,8 +18,8 @@ const AddAnimal = () => {
   const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [vaccinationImageFile, setVaccinationImageFile] = useState<File | null>(null);
-  const [vaccinationImagePreview, setVaccinationImagePreview] = useState<string | null>(null);
+  const [vaccinationImageFiles, setVaccinationImageFiles] = useState<File[]>([]);
+  const [vaccinationImagePreviews, setVaccinationImagePreviews] = useState<string[]>([]);
   
   const [formData, setFormData] = useState({
     animal_type: '',
@@ -52,14 +52,22 @@ const AddAnimal = () => {
   };
 
   const handleVaccinationImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setVaccinationImageFile(file);
-      const reader = new FileReader();
-      reader.onload = () => {
-        setVaccinationImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const newFiles = Array.from(files);
+      const newPreviews: string[] = [];
+      
+      newFiles.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          newPreviews.push(reader.result as string);
+          if (newPreviews.length === newFiles.length) {
+            setVaccinationImageFiles(prev => [...prev, ...newFiles]);
+            setVaccinationImagePreviews(prev => [...prev, ...newPreviews]);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
     }
   };
 
@@ -85,26 +93,31 @@ const AddAnimal = () => {
     return data.publicUrl;
   };
 
-  const uploadVaccinationImage = async (animalId: string): Promise<string | null> => {
-    if (!vaccinationImageFile || !user) return null;
+  const uploadVaccinationImages = async (animalId: string): Promise<string[]> => {
+    if (!vaccinationImageFiles.length || !user) return [];
 
-    const fileExt = vaccinationImageFile.name.split('.').pop();
-    const fileName = `${user.id}/${animalId}-vaccination-${Date.now()}.${fileExt}`;
+    const uploadPromises = vaccinationImageFiles.map(async (file, index) => {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${animalId}-vaccination-${index + 1}-${Date.now()}.${fileExt}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('animal-images')
-      .upload(fileName, vaccinationImageFile);
+      const { error: uploadError } = await supabase.storage
+        .from('animal-images')
+        .upload(fileName, file);
 
-    if (uploadError) {
-      console.error('Error uploading vaccination image:', uploadError);
-      return null;
-    }
+      if (uploadError) {
+        console.error('Error uploading vaccination image:', uploadError);
+        return null;
+      }
 
-    const { data } = supabase.storage
-      .from('animal-images')
-      .getPublicUrl(fileName);
+      const { data } = supabase.storage
+        .from('animal-images')
+        .getPublicUrl(fileName);
 
-    return data.publicUrl;
+      return data.publicUrl;
+    });
+
+    const results = await Promise.all(uploadPromises);
+    return results.filter(url => url !== null) as string[];
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -171,23 +184,25 @@ const AddAnimal = () => {
         }
       }
 
-      // Upload vaccination image if provided
-      if (vaccinationImageFile && animal) {
-        const vaccinationImageUrl = await uploadVaccinationImage(animal.id);
+      // Upload vaccination images if provided
+      if (vaccinationImageFiles.length > 0 && animal) {
+        const vaccinationImageUrls = await uploadVaccinationImages(animal.id);
         
-        if (vaccinationImageUrl) {
-          // Create vaccination image record
+        if (vaccinationImageUrls.length > 0) {
+          // Create vaccination image records for each image
+          const imageInserts = vaccinationImageUrls.map(url => ({
+            animal_id: animal.id,
+            image_url: url,
+            image_type: 'vaccination',
+            description: 'Vaccination certificate'
+          }));
+
           const { error: vaccinationImageError } = await supabase
             .from('animal_images')
-            .insert({
-              animal_id: animal.id,
-              image_url: vaccinationImageUrl,
-              image_type: 'vaccination',
-              description: 'Vaccination certificate'
-            });
+            .insert(imageInserts);
 
           if (vaccinationImageError) {
-            console.error('Error saving vaccination image record:', vaccinationImageError);
+            console.error('Error saving vaccination image records:', vaccinationImageError);
           }
         }
       }
@@ -437,26 +452,51 @@ const AddAnimal = () => {
 
                 {/* Vaccination Certificate Upload */}
                 <div className="space-y-2">
-                  <Label htmlFor="vaccination_image">Vaccination Certificate Photo</Label>
+                  <Label htmlFor="vaccination_image">Vaccination Certificate Photos</Label>
                   <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
-                    {vaccinationImagePreview ? (
+                    {vaccinationImagePreviews.length > 0 ? (
                       <div className="space-y-4">
-                        <img 
-                          src={vaccinationImagePreview} 
-                          alt="Vaccination certificate preview" 
-                          className="w-full h-32 object-cover rounded-lg mx-auto"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setVaccinationImageFile(null);
-                            setVaccinationImagePreview(null);
-                          }}
-                        >
-                          Remove Certificate
-                        </Button>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {vaccinationImagePreviews.map((preview, index) => (
+                            <div key={index} className="relative">
+                              <img 
+                                src={preview} 
+                                alt={`Vaccination certificate ${index + 1}`} 
+                                className="w-full h-32 object-cover rounded-lg"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="absolute top-2 right-2 bg-background/80"
+                                onClick={() => {
+                                  const newFiles = vaccinationImageFiles.filter((_, i) => i !== index);
+                                  const newPreviews = vaccinationImagePreviews.filter((_, i) => i !== index);
+                                  setVaccinationImageFiles(newFiles);
+                                  setVaccinationImagePreviews(newPreviews);
+                                }}
+                              >
+                                ✕
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                        <div>
+                          <Label htmlFor="vaccination_image" className="cursor-pointer">
+                            <div className="flex items-center justify-center space-x-2 text-primary hover:text-primary/80">
+                              <Upload className="h-4 w-4" />
+                              <span>Add More Certificates</span>
+                            </div>
+                          </Label>
+                          <Input
+                            id="vaccination_image"
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleVaccinationImageUpload}
+                            className="hidden"
+                          />
+                        </div>
                       </div>
                     ) : (
                       <div className="space-y-2">
@@ -465,19 +505,20 @@ const AddAnimal = () => {
                           <Label htmlFor="vaccination_image" className="cursor-pointer">
                             <div className="flex items-center justify-center space-x-2 text-primary hover:text-primary/80">
                               <Upload className="h-4 w-4" />
-                              <span>Upload Vaccination Certificate</span>
+                              <span>Upload Vaccination Certificates</span>
                             </div>
                           </Label>
                           <Input
                             id="vaccination_image"
                             type="file"
                             accept="image/*"
+                            multiple
                             onChange={handleVaccinationImageUpload}
                             className="hidden"
                           />
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Upload vaccination certificate or medical records
+                          Upload vaccination certificates or medical records (multiple files allowed)
                         </p>
                       </div>
                     )}
