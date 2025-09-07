@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
+import { useSellerAnimals } from "@/hooks/useSellerAnimals";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,20 +27,11 @@ const Dashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("animals");
+  
+  const { animals: sellerAnimals, loading: animalsLoading } = useSellerAnimals();
+  const { isSeller, loading: roleLoading } = useUserRole();
 
-  // Sample user listings
-  const userAnimals = [
-    {
-      id: 1,
-      type: "Dairy Cow",
-      breed: "Holstein Friesian",
-      price: "₹85,000",
-      status: "active",
-      views: 24,
-      inquiries: 5
-    }
-  ];
-
+  // Sample crop data - will be replaced with real data later
   const userCrops = [
     {
       id: 1,
@@ -52,20 +45,32 @@ const Dashboard = () => {
   ];
 
   const handleAddListing = (type: 'animal' | 'crop') => {
-    toast({
-      title: "Add Listing",
-      description: `${type === 'animal' ? 'Animal' : 'Crop'} listing form will be available soon`,
-    });
+    if (type === 'animal') {
+      if (!isSeller) {
+        toast({
+          title: "Access Denied",
+          description: "Only sellers can add animal listings",
+          variant: "destructive"
+        });
+        return;
+      }
+      navigate('/add-animal');
+    } else {
+      toast({
+        title: "Add Listing",
+        description: "Crop listing form will be available soon",
+      });
+    }
   };
 
-  const handleEditListing = (id: number, type: 'animal' | 'crop') => {
+  const handleEditListing = (id: string | number, type: 'animal' | 'crop') => {
     toast({
       title: "Edit Listing",
       description: `Edit ${type} listing #${id}`,
     });
   };
 
-  const handleDeleteListing = (id: number, type: 'animal' | 'crop') => {
+  const handleDeleteListing = (id: string | number, type: 'animal' | 'crop') => {
     toast({
       title: "Delete Listing", 
       description: `${type} listing #${id} deleted`,
@@ -98,7 +103,7 @@ const Dashboard = () => {
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Listings</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">{userAnimals.length + userCrops.length}</div>
+              <div className="text-2xl font-bold text-foreground">{sellerAnimals.length + userCrops.length}</div>
               <p className="text-xs text-muted-foreground">Active listings</p>
             </CardContent>
           </Card>
@@ -150,35 +155,42 @@ const Dashboard = () => {
                     Crops
                   </TabsTrigger>
                 </TabsList>
-                <Button 
-                  onClick={() => handleAddListing(activeTab === 'animals' ? 'animal' : 'crop')}
-                  className="bg-gradient-primary"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add {activeTab === 'animals' ? 'Animal' : 'Crop'}
-                </Button>
+                {((activeTab === 'animals' && isSeller) || activeTab === 'crops') && (
+                  <Button 
+                    onClick={() => handleAddListing(activeTab === 'animals' ? 'animal' : 'crop')}
+                    className="bg-gradient-primary"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add {activeTab === 'animals' ? 'Animal' : 'Crop'}
+                  </Button>
+                )}
               </div>
 
               <TabsContent value="animals">
                 <div className="space-y-4">
-                  {userAnimals.length > 0 ? (
-                    userAnimals.map((animal) => (
+                  {animalsLoading ? (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">Loading your listings...</p>
+                    </div>
+                  ) : sellerAnimals.length > 0 ? (
+                    sellerAnimals.map((animal) => (
                       <Card key={animal.id} className="shadow-soft">
                         <CardContent className="p-6">
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
                               <div className="flex items-center space-x-3 mb-2">
                                 <h3 className="text-lg font-semibold text-foreground">
-                                  {animal.type} - {animal.breed}
+                                  {animal.animal_type} - {animal.breed}
                                 </h3>
-                                <Badge variant={animal.status === 'active' ? 'default' : 'secondary'}>
-                                  {animal.status}
+                                <Badge variant={animal.is_available ? 'default' : 'secondary'}>
+                                  {animal.is_available ? 'active' : 'inactive'}
                                 </Badge>
                               </div>
-                              <p className="text-2xl font-bold text-primary mb-2">{animal.price}</p>
+                              <p className="text-2xl font-bold text-primary mb-2">₹{animal.price.toLocaleString()}</p>
                               <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                                <span>{animal.views} views</span>
-                                <span>{animal.inquiries} inquiries</span>
+                                <span>{animal.location}</span>
+                                <span>{animal.gender}</span>
+                                {animal.age_years && <span>{animal.age_years}y {animal.age_months}m</span>}
                               </div>
                             </div>
                             <div className="flex space-x-2">
@@ -204,13 +216,17 @@ const Dashboard = () => {
                   ) : (
                     <div className="text-center py-8">
                       <Heart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">No animal listings yet</p>
-                      <Button 
-                        className="mt-4 bg-gradient-primary"
-                        onClick={() => handleAddListing('animal')}
-                      >
-                        Add Your First Animal
-                      </Button>
+                      <p className="text-muted-foreground">
+                        {!isSeller ? "Only sellers can add animal listings" : "No animal listings yet"}
+                      </p>
+                      {isSeller && (
+                        <Button 
+                          className="mt-4 bg-gradient-primary"
+                          onClick={() => handleAddListing('animal')}
+                        >
+                          Add Your First Animal
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
