@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { useAnimals } from "@/hooks/useAnimals";
+import { useSellerAnimals } from "@/hooks/useSellerAnimals";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,8 +29,13 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("animals");
   
-  const { animals: allAnimals, loading: animalsLoading } = useAnimals();
+  const { animals: allAnimals, loading: allAnimalsLoading } = useAnimals();
+  const { animals: sellerAnimals, loading: sellerAnimalsLoading } = useSellerAnimals();
   const { isSeller, loading: roleLoading } = useUserRole();
+
+  // Use seller's own animals if they're a seller, otherwise show all animals
+  const animals = isSeller ? sellerAnimals : allAnimals;
+  const animalsLoading = isSeller ? sellerAnimalsLoading : allAnimalsLoading;
 
   // Sample crop data - will be replaced with real data later
   const userCrops = [
@@ -103,7 +109,7 @@ const Dashboard = () => {
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Listings</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">{allAnimals.length + userCrops.length}</div>
+              <div className="text-2xl font-bold text-foreground">{animals.length + userCrops.length}</div>
               <p className="text-xs text-muted-foreground">Active listings</p>
             </CardContent>
           </Card>
@@ -172,8 +178,8 @@ const Dashboard = () => {
                     <div className="text-center py-8">
                       <p className="text-muted-foreground">Loading your listings...</p>
                     </div>
-                  ) : allAnimals.length > 0 ? (
-                    allAnimals.map((animal) => (
+                  ) : animals.length > 0 ? (
+                    animals.map((animal) => (
                       <Card key={animal.id} className="shadow-soft">
                         <CardContent className="p-6">
                           <div className="flex justify-between items-start">
