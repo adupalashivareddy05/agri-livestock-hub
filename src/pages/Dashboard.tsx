@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
-import { useSellerAnimals } from "@/hooks/useSellerAnimals";
+import { useAnimals } from "@/hooks/useAnimals";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +28,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("animals");
   
-  const { animals: sellerAnimals, loading: animalsLoading } = useSellerAnimals();
+  const { animals: allAnimals, loading: animalsLoading } = useAnimals();
   const { isSeller, loading: roleLoading } = useUserRole();
 
   // Sample crop data - will be replaced with real data later
@@ -103,7 +103,7 @@ const Dashboard = () => {
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Listings</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">{sellerAnimals.length + userCrops.length}</div>
+              <div className="text-2xl font-bold text-foreground">{allAnimals.length + userCrops.length}</div>
               <p className="text-xs text-muted-foreground">Active listings</p>
             </CardContent>
           </Card>
@@ -172,8 +172,8 @@ const Dashboard = () => {
                     <div className="text-center py-8">
                       <p className="text-muted-foreground">Loading your listings...</p>
                     </div>
-                  ) : sellerAnimals.length > 0 ? (
-                    sellerAnimals.map((animal) => (
+                  ) : allAnimals.length > 0 ? (
+                    allAnimals.map((animal) => (
                       <Card key={animal.id} className="shadow-soft">
                         <CardContent className="p-6">
                           <div className="flex justify-between items-start">
