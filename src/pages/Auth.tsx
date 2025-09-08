@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [address, setAddress] = useState('');
@@ -21,9 +22,10 @@ const Auth = () => {
   const [state, setState] = useState('');
   const [pincode, setPincode] = useState('');
   const [userRole, setUserRole] = useState('');
+  const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { signUp, signIn, user } = useAuth();
+  const { signUp, signInWithIdentifier, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -35,7 +37,7 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    if (!loginIdentifier || !password) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -45,7 +47,7 @@ const Auth = () => {
     }
 
     setLoading(true);
-    const { error } = await signIn(email, password);
+    const { error } = await signInWithIdentifier(loginIdentifier, password);
     
     if (error) {
       toast({
@@ -64,7 +66,7 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || !fullName || !userRole) {
+    if (!email || !password || !fullName || !username || !userRole) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -78,6 +80,7 @@ const Auth = () => {
     // Sign up the user
     const { error: signUpError } = await signUp(email, password, {
       full_name: fullName,
+      username: username,
       phone_number: phoneNumber,
       address,
       city,
@@ -121,6 +124,7 @@ const Auth = () => {
           const { error: profileError } = await supabase
             .from('profiles')
             .update({
+              username: username,
               phone_number: phoneNumber,
               address,
               city,
@@ -186,15 +190,15 @@ const Auth = () => {
               <CardContent>
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signin-identifier">Email or Username</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
-                        id="signin-email"
-                        type="email"
-                        placeholder="Enter your email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        id="signin-identifier"
+                        type="text"
+                        placeholder="Enter your email or username"
+                        value={loginIdentifier}
+                        onChange={(e) => setLoginIdentifier(e.target.value)}
                         className="pl-10"
                         required
                       />
@@ -253,20 +257,35 @@ const Auth = () => {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="signup-role">Role *</Label>
-                      <Select value={userRole} onValueChange={setUserRole} required>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="farmer">Farmer</SelectItem>
-                          <SelectItem value="seller">Animal Seller</SelectItem>
-                          <SelectItem value="buyer">Animal Buyer</SelectItem>
-                          <SelectItem value="seasonal_trader">Seasonal Trader</SelectItem>
-                          <SelectItem value="everyday_trader">Everyday Trader</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="signup-username">Username *</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="signup-username"
+                          placeholder="Choose username"
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-role">Role *</Label>
+                    <Select value={userRole} onValueChange={setUserRole} required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="farmer">Farmer</SelectItem>
+                        <SelectItem value="seller">Animal Seller</SelectItem>
+                        <SelectItem value="buyer">Animal Buyer</SelectItem>
+                        <SelectItem value="seasonal_trader">Seasonal Trader</SelectItem>
+                        <SelectItem value="everyday_trader">Everyday Trader</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-2">
