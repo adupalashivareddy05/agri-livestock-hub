@@ -30,7 +30,7 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("animals");
   
   const { animals: allAnimals, loading: allAnimalsLoading } = useAnimals();
-  const { animals: sellerAnimals, loading: sellerAnimalsLoading } = useSellerAnimals();
+  const { animals: sellerAnimals, loading: sellerAnimalsLoading, deleteAnimal } = useSellerAnimals();
   const { isSeller, loading: roleLoading } = useUserRole();
 
   // Use seller's own animals if they're a seller, otherwise show all animals
@@ -76,12 +76,28 @@ const Dashboard = () => {
     });
   };
 
-  const handleDeleteListing = (id: string | number, type: 'animal' | 'crop') => {
-    toast({
-      title: "Delete Listing", 
-      description: `${type} listing #${id} deleted`,
-      variant: "destructive",
-    });
+  const handleDeleteListing = async (id: string | number, type: 'animal' | 'crop') => {
+    if (type === 'animal' && typeof id === 'string') {
+      try {
+        await deleteAnimal(id);
+        toast({
+          title: "Animal Deleted",
+          description: "Your animal listing has been successfully deleted",
+        });
+      } catch (error) {
+        toast({
+          title: "Delete Failed",
+          description: error instanceof Error ? error.message : "Failed to delete animal",
+          variant: "destructive",
+        });
+      }
+    } else {
+      toast({
+        title: "Delete Listing", 
+        description: `${type} listing #${id} deleted`,
+        variant: "destructive",
+      });
+    }
   };
 
   return (

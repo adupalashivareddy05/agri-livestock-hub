@@ -75,10 +75,36 @@ export const useSellerAnimals = () => {
     fetchSellerAnimals();
   }, [user?.id]);
 
+  const deleteAnimal = async (animalId: string) => {
+    if (!user?.id) {
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      const { error } = await supabase
+        .from('animals')
+        .delete()
+        .eq('id', animalId)
+        .eq('seller_id', user.id); // Ensure only owner can delete
+
+      if (error) {
+        throw error;
+      }
+
+      // Update local state to remove the deleted animal
+      setAnimals(prev => prev.filter(animal => animal.id !== animalId));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete animal';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
   return {
     animals,
     loading,
     error,
-    refetch: fetchSellerAnimals
+    refetch: fetchSellerAnimals,
+    deleteAnimal
   };
 };
