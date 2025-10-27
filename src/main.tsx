@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard'
 import Animals from './pages/Animals'
 import AddAnimal from './pages/AddAnimal'
 import Crops from './pages/Crops'
+import TraderRates from './pages/TraderRates'
 import NotFound from './pages/NotFound'
 
 const queryClient = new QueryClient()
@@ -28,6 +29,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/animals" element={<Animals />} />
               <Route path="/add-animal" element={<AddAnimal />} />
               <Route path="/crops" element={<Crops />} />
+              <Route path="/trader-rates" element={<TraderRates />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           <Toaster />

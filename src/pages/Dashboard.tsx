@@ -62,10 +62,7 @@ const Dashboard = () => {
       }
       navigate('/add-animal');
     } else {
-      toast({
-        title: "Add Listing",
-        description: "Crop listing form will be available soon",
-      });
+      navigate('/trader-rates');
     }
   };
 
