@@ -52,14 +52,6 @@ const Dashboard = () => {
 
   const handleAddListing = (type: 'animal' | 'crop') => {
     if (type === 'animal') {
-      if (!isSeller) {
-        toast({
-          title: "Access Denied",
-          description: "Only sellers can add animal listings",
-          variant: "destructive"
-        });
-        return;
-      }
       navigate('/add-animal');
     } else {
       navigate('/trader-rates');
@@ -174,15 +166,13 @@ const Dashboard = () => {
                     Crops
                   </TabsTrigger>
                 </TabsList>
-                {((activeTab === 'animals' && isSeller) || activeTab === 'crops') && (
-                  <Button 
-                    onClick={() => handleAddListing(activeTab === 'animals' ? 'animal' : 'crop')}
-                    className="bg-gradient-primary"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add {activeTab === 'animals' ? 'Animal' : 'Crop'}
-                  </Button>
-                )}
+                <Button 
+                  onClick={() => handleAddListing(activeTab === 'animals' ? 'animal' : 'crop')}
+                  className="bg-gradient-primary"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add {activeTab === 'animals' ? 'Animal' : 'Crop'}
+                </Button>
               </div>
 
               <TabsContent value="animals">
@@ -235,17 +225,13 @@ const Dashboard = () => {
                   ) : (
                     <div className="text-center py-8">
                       <Heart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">
-                        {!isSeller ? "Only sellers can add animal listings" : "No animal listings yet"}
-                      </p>
-                      {isSeller && (
-                        <Button 
-                          className="mt-4 bg-gradient-primary"
-                          onClick={() => handleAddListing('animal')}
-                        >
-                          Add Your First Animal
-                        </Button>
-                      )}
+                      <p className="text-muted-foreground">No animal listings yet</p>
+                      <Button 
+                        className="mt-4 bg-gradient-primary"
+                        onClick={() => handleAddListing('animal')}
+                      >
+                        Add Your First Animal
+                      </Button>
                     </div>
                   )}
                 </div>

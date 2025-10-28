@@ -3,21 +3,15 @@ import { ArrowRight, Users, Wheat, TrendingUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { useUserRole } from "@/hooks/useUserRole";
 import heroImage from "@/assets/hero-agriculture.jpg";
 
 const HeroSection = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isSeller } = useUserRole();
 
   const handleTradeClick = (type: 'animals' | 'crops') => {
-    if (type === 'animals' && user && isSeller) {
-      navigate('/add-animal');
-    } else {
-      navigate(`/${type}`);
-    }
+    navigate(`/${type}`);
   };
 
   return (
