@@ -1,13 +1,15 @@
 import { Button } from "@/components/ui/button";
-import { Leaf, Users, Wheat, LogOut } from "lucide-react";
+import { Leaf, Users, Wheat, LogOut, Store } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const Header = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isSeller } = useUserRole();
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -55,6 +57,16 @@ const Header = () => {
             <Wheat className="h-4 w-4 mr-2" />
             Crop Trading
           </Button>
+          {user && isSeller && (
+            <Button 
+              variant="ghost" 
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => navigate('/sellers-portal')}
+            >
+              <Store className="h-4 w-4 mr-2" />
+              Sellers Portal
+            </Button>
+          )}
           {user && (
             <Button 
               variant="ghost" 
