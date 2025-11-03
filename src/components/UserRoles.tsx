@@ -1,16 +1,20 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Shield, User, ShoppingCart, Tractor, Store, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
 const UserRoles = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
 
-  const handleJoinRole = (role: string) => {
+  const handleJoinRole = async (role: string) => {
     if (!user) {
       toast({
         title: "Please sign in",
@@ -21,14 +25,76 @@ const UserRoles = () => {
       return;
     }
     
-    toast({
-      title: "Role Selection",
-      description: `Joined as ${role}! Visit your dashboard to start.`,
-    });
+    setLoading(true);
     
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 1500);
+    // Map UI role names to database enum values
+    const roleMapping: Record<string, Database['public']['Enums']['app_role']> = {
+      'Seller': 'seller',
+      'Buyer': 'buyer',
+      'Admin': 'admin',
+      'Farmer': 'farmer',
+      'Seasonal Trader': 'seasonal_trader',
+      'Daily Trader': 'everyday_trader'
+    };
+    
+    const dbRole = roleMapping[role];
+    
+    try {
+      // Check if user already has this role
+      const { data: existingRole } = await supabase
+        .from('user_roles')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('role', dbRole)
+        .maybeSingle();
+      
+      if (existingRole) {
+        toast({
+          title: "Already Assigned",
+          description: `You already have the ${role} role!`,
+        });
+        setLoading(false);
+        navigate('/dashboard');
+        return;
+      }
+      
+      // Insert the role
+      const { error } = await supabase
+        .from('user_roles')
+        .insert([{
+          user_id: user.id,
+          role: dbRole
+        }]);
+      
+      if (error) {
+        console.error('Error adding role:', error);
+        toast({
+          title: "Role Assignment Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+      
+      toast({
+        title: "Success!",
+        description: `You've joined as ${role}! Redirecting to dashboard...`,
+      });
+      
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
+    } catch (err) {
+      console.error('Error:', err);
+      toast({
+        title: "Error",
+        description: "Failed to assign role. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
   const animalRoles = [
     {
@@ -118,8 +184,9 @@ const UserRoles = () => {
                   <Button 
                     className="w-full bg-gradient-primary"
                     onClick={() => handleJoinRole(role.title)}
+                    disabled={loading}
                   >
-                    Join as {role.title}
+                    {loading ? "Assigning..." : `Join as ${role.title}`}
                   </Button>
                 </CardContent>
               </Card>
@@ -164,8 +231,9 @@ const UserRoles = () => {
                   <Button 
                     className="w-full bg-gradient-harvest text-harvest-gold-foreground"
                     onClick={() => handleJoinRole(role.title)}
+                    disabled={loading}
                   >
-                    Join as {role.title}
+                    {loading ? "Assigning..." : `Join as ${role.title}`}
                   </Button>
                 </CardContent>
               </Card>
