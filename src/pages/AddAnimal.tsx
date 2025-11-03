@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { z } from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,24 @@ import { useNavigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+
+// Validation schema
+const animalSchema = z.object({
+  animal_type: z.enum(['cow', 'buffalo', 'goat', 'sheep', 'bull', 'ox'], { errorMap: () => ({ message: "Please select an animal type" }) }),
+  breed: z.string().trim().min(1, "Breed is required").max(100, "Breed must be less than 100 characters"),
+  gender: z.enum(['male', 'female'], { errorMap: () => ({ message: "Please select a gender" }) }),
+  price: z.number({ invalid_type_error: "Price must be a number" }).positive("Price must be positive").max(10000000, "Price seems unreasonably high"),
+  age_years: z.number({ invalid_type_error: "Age must be a number" }).int().min(0).max(25, "Age seems unreasonably high").optional().nullable(),
+  age_months: z.number({ invalid_type_error: "Age must be a number" }).int().min(0).max(11, "Months must be between 0-11").optional().nullable(),
+  location: z.string().trim().min(1, "Location is required").max(200, "Location must be less than 200 characters"),
+  description: z.string().trim().max(2000, "Description must be less than 2000 characters").optional(),
+  milk_capacity_liters: z.number({ invalid_type_error: "Milk capacity must be a number" }).positive("Milk capacity must be positive").max(100, "Milk capacity seems unreasonably high").optional().nullable(),
+  body_height_cm: z.number({ invalid_type_error: "Height must be a number" }).positive("Height must be positive").max(500, "Height seems unreasonably high").optional().nullable(),
+  vaccination_details: z.string().trim().max(1000, "Vaccination details must be less than 1000 characters").optional(),
+  father_breed: z.string().trim().max(100, "Father breed must be less than 100 characters").optional(),
+  mother_breed: z.string().trim().max(100, "Mother breed must be less than 100 characters").optional(),
+  adaptability_notes: z.string().trim().max(500, "Adaptability notes must be less than 500 characters").optional()
+});
 
 const AddAnimal = () => {
   const { user } = useAuth();
@@ -142,6 +161,34 @@ const AddAnimal = () => {
         variant: "destructive",
       });
       navigate('/auth');
+      return;
+    }
+
+    // Validate input
+    const validationData = {
+      animal_type: formData.animal_type,
+      breed: formData.breed,
+      gender: formData.gender,
+      price: formData.price ? parseFloat(formData.price) : 0,
+      age_years: formData.age_years ? parseInt(formData.age_years) : null,
+      age_months: formData.age_months ? parseInt(formData.age_months) : null,
+      location: formData.location,
+      description: formData.description,
+      milk_capacity_liters: formData.milk_capacity_liters ? parseInt(formData.milk_capacity_liters) : null,
+      body_height_cm: formData.body_height_cm ? parseInt(formData.body_height_cm) : null,
+      vaccination_details: formData.vaccination_details,
+      father_breed: formData.father_breed,
+      mother_breed: formData.mother_breed,
+      adaptability_notes: formData.adaptability_notes
+    };
+
+    const result = animalSchema.safeParse(validationData);
+    if (!result.success) {
+      toast({
+        title: "Validation Error",
+        description: result.error.errors[0].message,
+        variant: "destructive",
+      });
       return;
     }
 

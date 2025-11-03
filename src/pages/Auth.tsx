@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +11,25 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Leaf, Mail, Lock, User, Phone, MapPin, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+
+// Validation schemas
+const signInSchema = z.object({
+  loginIdentifier: z.string().trim().min(1, "Email or username is required"),
+  password: z.string().min(1, "Password is required")
+});
+
+const signUpSchema = z.object({
+  email: z.string().trim().email("Invalid email address").max(255, "Email must be less than 255 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters").max(128, "Password must be less than 128 characters"),
+  username: z.string().trim().min(3, "Username must be at least 3 characters").max(50, "Username must be less than 50 characters").regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
+  fullName: z.string().trim().min(1, "Full name is required").max(100, "Full name must be less than 100 characters"),
+  phoneNumber: z.string().trim().regex(/^[+]?[0-9]{10,15}$/, "Invalid phone number (10-15 digits)").optional().or(z.literal('')),
+  address: z.string().trim().max(500, "Address must be less than 500 characters").optional().or(z.literal('')),
+  city: z.string().trim().max(100, "City must be less than 100 characters").optional().or(z.literal('')),
+  state: z.string().trim().max(100, "State must be less than 100 characters").optional().or(z.literal('')),
+  pincode: z.string().trim().regex(/^[0-9]{6}$/, "Pincode must be exactly 6 digits").optional().or(z.literal('')),
+  userRole: z.string().min(1, "Please select a role")
+});
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -37,10 +57,13 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loginIdentifier || !password) {
+    
+    // Validate input
+    const result = signInSchema.safeParse({ loginIdentifier, password });
+    if (!result.success) {
       toast({
-        title: "Error",
-        description: "Please fill in all fields",
+        title: "Validation Error",
+        description: result.error.errors[0].message,
         variant: "destructive",
       });
       return;
@@ -66,10 +89,25 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || !fullName || !username || !userRole) {
+    
+    // Validate input
+    const result = signUpSchema.safeParse({
+      email,
+      password,
+      username,
+      fullName,
+      phoneNumber,
+      address,
+      city,
+      state,
+      pincode,
+      userRole
+    });
+    
+    if (!result.success) {
       toast({
-        title: "Error",
-        description: "Please fill in all required fields",
+        title: "Validation Error",
+        description: result.error.errors[0].message,
         variant: "destructive",
       });
       return;

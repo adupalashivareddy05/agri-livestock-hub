@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { z } from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,26 @@ import { useToast } from "@/hooks/use-toast";
 import { useTraderRates } from "@/hooks/useTraderRates";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Constants } from "@/integrations/supabase/types";
+
+// Validation schema
+const rateSchema = z.object({
+  crop_type: z.string().min(1, "Please select a crop type"),
+  rate_per_kg: z.number({ invalid_type_error: "Rate must be a number" }).positive("Rate must be positive").max(100000, "Rate seems unreasonably high"),
+  minimum_quantity_kg: z.number({ invalid_type_error: "Minimum quantity must be a number" }).positive("Minimum quantity must be positive").max(1000000, "Quantity seems unreasonably high").optional().nullable(),
+  maximum_quantity_kg: z.number({ invalid_type_error: "Maximum quantity must be a number" }).positive("Maximum quantity must be positive").max(1000000, "Quantity seems unreasonably high").optional().nullable(),
+  notes: z.string().trim().max(500, "Notes must be less than 500 characters").optional()
+}).refine(
+  (data) => {
+    if (data.minimum_quantity_kg && data.maximum_quantity_kg) {
+      return data.minimum_quantity_kg <= data.maximum_quantity_kg;
+    }
+    return true;
+  },
+  {
+    message: "Minimum quantity cannot be greater than maximum quantity",
+    path: ["maximum_quantity_kg"]
+  }
+);
 
 const TraderRates = () => {
   const navigate = useNavigate();
@@ -57,6 +78,25 @@ const TraderRates = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate input
+    const validationData = {
+      crop_type: formData.crop_type,
+      rate_per_kg: formData.rate_per_kg ? parseFloat(formData.rate_per_kg) : 0,
+      minimum_quantity_kg: formData.minimum_quantity_kg ? parseFloat(formData.minimum_quantity_kg) : null,
+      maximum_quantity_kg: formData.maximum_quantity_kg ? parseFloat(formData.maximum_quantity_kg) : null,
+      notes: formData.notes || undefined
+    };
+
+    const result = rateSchema.safeParse(validationData);
+    if (!result.success) {
+      toast({
+        title: "Validation Error",
+        description: result.error.errors[0].message,
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       const rateData = {

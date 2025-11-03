@@ -329,7 +329,30 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          city: string | null
+          full_name: string | null
+          state: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          city?: string | null
+          full_name?: string | null
+          state?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          city?: string | null
+          full_name?: string | null
+          state?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       find_user_by_email_or_username: {
