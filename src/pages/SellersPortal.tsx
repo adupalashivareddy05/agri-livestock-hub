@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { useSellerAnimals } from "@/hooks/useSellerAnimals";
-import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,17 +28,6 @@ const SellersPortal = () => {
   const [activeTab, setActiveTab] = useState("animals");
   
   const { animals: sellerAnimals, loading: sellerAnimalsLoading, deleteAnimal } = useSellerAnimals();
-  const { isSeller, loading: roleLoading } = useUserRole();
-
-  // Redirect if not a seller
-  if (!roleLoading && !isSeller) {
-    toast({
-      title: "Access Denied",
-      description: "Only sellers can access this portal",
-      variant: "destructive"
-    });
-    navigate('/');
-  }
 
   const handleAddAnimal = () => {
     navigate('/add-animal');
