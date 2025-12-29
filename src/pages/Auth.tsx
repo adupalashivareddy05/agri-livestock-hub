@@ -13,9 +13,12 @@ import { Leaf, Mail, Lock, User, Phone, MapPin, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 // Validation schemas
-const signInSchema = z.object({
-  loginIdentifier: z.string().trim().min(1, "Email or username is required"),
-  password: z.string().min(1, "Password is required")
+const phoneSignInSchema = z.object({
+  phone: z.string().trim().regex(/^\+[0-9]{10,15}$/, "Phone number must start with + and country code (e.g., +919876543210)")
+});
+
+const otpSchema = z.object({
+  otp: z.string().trim().length(6, "OTP must be exactly 6 digits")
 });
 
 const signUpSchema = z.object({
@@ -23,7 +26,7 @@ const signUpSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters").max(128, "Password must be less than 128 characters"),
   username: z.string().trim().min(3, "Username must be at least 3 characters").max(50, "Username must be less than 50 characters").regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
   fullName: z.string().trim().min(1, "Full name is required").max(100, "Full name must be less than 100 characters"),
-  phoneNumber: z.string().trim().regex(/^[+]?[0-9]{10,15}$/, "Invalid phone number (10-15 digits)").optional().or(z.literal('')),
+  phoneNumber: z.string().trim().regex(/^\+[0-9]{10,15}$/, "Phone must start with + and country code (e.g., +919876543210)"),
   address: z.string().trim().max(500, "Address must be less than 500 characters").optional().or(z.literal('')),
   city: z.string().trim().max(100, "City must be less than 100 characters").optional().or(z.literal('')),
   state: z.string().trim().max(100, "State must be less than 100 characters").optional().or(z.literal('')),
@@ -42,10 +45,12 @@ const Auth = () => {
   const [state, setState] = useState('');
   const [pincode, setPincode] = useState('');
   const [userRole, setUserRole] = useState('');
-  const [loginIdentifier, setLoginIdentifier] = useState('');
+  const [loginPhone, setLoginPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const { signUp, signInWithIdentifier, user } = useAuth();
+  const { signUp, signInWithPhone, verifyOtp, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -55,11 +60,11 @@ const Auth = () => {
     }
   }, [user, navigate]);
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate input
-    const result = signInSchema.safeParse({ loginIdentifier, password });
+    // Validate phone
+    const result = phoneSignInSchema.safeParse({ phone: loginPhone });
     if (!result.success) {
       toast({
         title: "Validation Error",
@@ -70,17 +75,50 @@ const Auth = () => {
     }
 
     setLoading(true);
-    const { error } = await signInWithIdentifier(loginIdentifier, password);
+    const { error } = await signInWithPhone(loginPhone);
     
     if (error) {
       toast({
-        title: "Sign In Failed",
+        title: "Failed to Send OTP",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setOtpSent(true);
+      toast({
+        title: "OTP Sent!",
+        description: "Please check your phone for the verification code.",
+      });
+    }
+    setLoading(false);
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate OTP
+    const result = otpSchema.safeParse({ otp });
+    if (!result.success) {
+      toast({
+        title: "Validation Error",
+        description: result.error.errors[0].message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await verifyOtp(loginPhone, otp);
+    
+    if (error) {
+      toast({
+        title: "Verification Failed",
         description: error.message,
         variant: "destructive",
       });
     } else {
       toast({
-        title: "Welcome back!",
+        title: "Welcome!",
         description: "You have successfully signed in.",
       });
     }
@@ -220,51 +258,80 @@ const Auth = () => {
           <TabsContent value="signin" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Sign In</CardTitle>
+                <CardTitle>Sign In with Phone</CardTitle>
                 <CardDescription>
-                  Welcome back! Please sign in to your account.
+                  {otpSent 
+                    ? "Enter the OTP sent to your phone." 
+                    : "We'll send you a verification code."}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-identifier">Email or Username</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="signin-identifier"
-                        type="text"
-                        placeholder="Enter your email or username"
-                        value={loginIdentifier}
-                        onChange={(e) => setLoginIdentifier(e.target.value)}
-                        className="pl-10"
-                        required
-                      />
+                {!otpSent ? (
+                  <form onSubmit={handleSendOtp} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-phone">Phone Number</Label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="signin-phone"
+                          type="tel"
+                          placeholder="+919876543210"
+                          value={loginPhone}
+                          onChange={(e) => setLoginPhone(e.target.value)}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Include country code (e.g., +91 for India)
+                      </p>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="signin-password"
-                        type="password"
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10"
-                        required
-                      />
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-gradient-primary" 
+                      disabled={loading}
+                    >
+                      {loading ? 'Sending OTP...' : 'Send OTP'}
+                    </Button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleVerifyOtp} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-otp">Enter OTP</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="signin-otp"
+                          type="text"
+                          placeholder="Enter 6-digit OTP"
+                          value={otp}
+                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          className="pl-10"
+                          maxLength={6}
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-gradient-primary" 
-                    disabled={loading}
-                  >
-                    {loading ? 'Signing In...' : 'Sign In'}
-                  </Button>
-                </form>
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-gradient-primary" 
+                      disabled={loading}
+                    >
+                      {loading ? 'Verifying...' : 'Verify & Sign In'}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="ghost"
+                      className="w-full"
+                      onClick={() => {
+                        setOtpSent(false);
+                        setOtp('');
+                      }}
+                    >
+                      Change Phone Number
+                    </Button>
+                  </form>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -359,18 +426,22 @@ const Auth = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="signup-phone">Phone Number</Label>
+                    <Label htmlFor="signup-phone">Phone Number *</Label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="signup-phone"
                         type="tel"
-                        placeholder="Enter phone number"
+                        placeholder="+919876543210"
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         className="pl-10"
+                        required
                       />
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      Include country code (e.g., +91 for India)
+                    </p>
                   </div>
 
                   <div className="space-y-2">
