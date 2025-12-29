@@ -48,10 +48,14 @@ const AddAnimal = () => {
   }, [roleLoading, isSeller, navigate, toast]);
   
   const [loading, setLoading] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [vaccinationImageFiles, setVaccinationImageFiles] = useState<File[]>([]);
   const [vaccinationImagePreviews, setVaccinationImagePreviews] = useState<string[]>([]);
+  
+  const MIN_ANIMAL_PHOTOS = 5;
+  const MAX_ANIMAL_PHOTOS = 10;
+  const MAX_VACCINATION_PHOTOS = 10;
   
   const [formData, setFormData] = useState({
     animal_type: '',
@@ -72,29 +76,57 @@ const AddAnimal = () => {
   });
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onload = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const remainingSlots = MAX_ANIMAL_PHOTOS - imageFiles.length;
+      const filesToAdd = Array.from(files).slice(0, remainingSlots);
+      
+      if (filesToAdd.length === 0) {
+        toast({
+          title: "Maximum photos reached",
+          description: `You can only upload up to ${MAX_ANIMAL_PHOTOS} animal photos`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const newPreviews: string[] = [];
+      filesToAdd.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          newPreviews.push(reader.result as string);
+          if (newPreviews.length === filesToAdd.length) {
+            setImageFiles(prev => [...prev, ...filesToAdd]);
+            setImagePreviews(prev => [...prev, ...newPreviews]);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
     }
   };
 
   const handleVaccinationImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      const newFiles = Array.from(files);
-      const newPreviews: string[] = [];
+      const remainingSlots = MAX_VACCINATION_PHOTOS - vaccinationImageFiles.length;
+      const filesToAdd = Array.from(files).slice(0, remainingSlots);
       
-      newFiles.forEach(file => {
+      if (filesToAdd.length === 0) {
+        toast({
+          title: "Maximum photos reached",
+          description: `You can only upload up to ${MAX_VACCINATION_PHOTOS} vaccination photos`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const newPreviews: string[] = [];
+      filesToAdd.forEach(file => {
         const reader = new FileReader();
         reader.onload = () => {
           newPreviews.push(reader.result as string);
-          if (newPreviews.length === newFiles.length) {
-            setVaccinationImageFiles(prev => [...prev, ...newFiles]);
+          if (newPreviews.length === filesToAdd.length) {
+            setVaccinationImageFiles(prev => [...prev, ...filesToAdd]);
             setVaccinationImagePreviews(prev => [...prev, ...newPreviews]);
           }
         };
@@ -103,26 +135,31 @@ const AddAnimal = () => {
     }
   };
 
-  const uploadImage = async (animalId: string): Promise<string | null> => {
-    if (!imageFile || !user) return null;
+  const uploadImages = async (animalId: string): Promise<string[]> => {
+    if (!imageFiles.length || !user) return [];
 
-    const fileExt = imageFile.name.split('.').pop();
-    const fileName = `${user.id}/${animalId}-${Date.now()}.${fileExt}`;
+    const uploadPromises = imageFiles.map(async (file, index) => {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${animalId}-photo-${index + 1}-${Date.now()}.${fileExt}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('animal-images')
-      .upload(fileName, imageFile);
+      const { error: uploadError } = await supabase.storage
+        .from('animal-images')
+        .upload(fileName, file);
 
-    if (uploadError) {
-      console.error('Error uploading image:', uploadError);
-      return null;
-    }
+      if (uploadError) {
+        console.error('Error uploading image:', uploadError);
+        return null;
+      }
 
-    const { data } = supabase.storage
-      .from('animal-images')
-      .getPublicUrl(fileName);
+      const { data } = supabase.storage
+        .from('animal-images')
+        .getPublicUrl(fileName);
 
-    return data.publicUrl;
+      return data.publicUrl;
+    });
+
+    const results = await Promise.all(uploadPromises);
+    return results.filter(url => url !== null) as string[];
   };
 
   const uploadVaccinationImages = async (animalId: string): Promise<string[]> => {
@@ -192,6 +229,16 @@ const AddAnimal = () => {
       return;
     }
 
+    // Validate minimum animal photos
+    if (imageFiles.length < MIN_ANIMAL_PHOTOS) {
+      toast({
+        title: "More photos required",
+        description: `Please upload at least ${MIN_ANIMAL_PHOTOS} photos of your animal`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -223,23 +270,25 @@ const AddAnimal = () => {
         throw animalError;
       }
 
-      // Upload main image if provided
-      if (imageFile && animal) {
-        const imageUrl = await uploadImage(animal.id);
+      // Upload animal images
+      if (imageFiles.length > 0 && animal) {
+        const imageUrls = await uploadImages(animal.id);
         
-        if (imageUrl) {
-          // Create animal_images record
+        if (imageUrls.length > 0) {
+          // Create animal_images records - first image is main, rest are gallery
+          const imageInserts = imageUrls.map((url, index) => ({
+            animal_id: animal.id,
+            image_url: url,
+            image_type: index === 0 ? 'main' : 'gallery',
+            description: index === 0 ? `${formData.animal_type} - ${formData.breed}` : `Photo ${index + 1}`
+          }));
+
           const { error: imageError } = await supabase
             .from('animal_images')
-            .insert({
-              animal_id: animal.id,
-              image_url: imageUrl,
-              image_type: 'main',
-              description: `${formData.animal_type} - ${formData.breed}`
-            });
+            .insert(imageInserts);
 
           if (imageError) {
-            console.error('Error saving image record:', imageError);
+            console.error('Error saving image records:', imageError);
           }
         }
       }
@@ -318,25 +367,65 @@ const AddAnimal = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Image Upload */}
                 <div className="space-y-2">
-                  <Label htmlFor="image">Animal Photo</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                    {imagePreview ? (
+                  <Label htmlFor="image">
+                    Animal Photos * <span className="text-muted-foreground font-normal">({imagePreviews.length}/{MAX_ANIMAL_PHOTOS} - minimum {MIN_ANIMAL_PHOTOS} required)</span>
+                  </Label>
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                    {imagePreviews.length > 0 ? (
                       <div className="space-y-4">
-                        <img 
-                          src={imagePreview} 
-                          alt="Animal preview" 
-                          className="w-full h-48 object-cover rounded-lg mx-auto"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setImageFile(null);
-                            setImagePreview(null);
-                          }}
-                        >
-                          Remove Image
-                        </Button>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                          {imagePreviews.map((preview, index) => (
+                            <div key={index} className="relative">
+                              <img 
+                                src={preview} 
+                                alt={`Animal photo ${index + 1}`} 
+                                className="w-full h-24 object-cover rounded-lg"
+                              />
+                              {index === 0 && (
+                                <span className="absolute bottom-1 left-1 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded">
+                                  Main
+                                </span>
+                              )}
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="absolute top-1 right-1 h-6 w-6 p-0 bg-background/80"
+                                onClick={() => {
+                                  const newFiles = imageFiles.filter((_, i) => i !== index);
+                                  const newPreviews = imagePreviews.filter((_, i) => i !== index);
+                                  setImageFiles(newFiles);
+                                  setImagePreviews(newPreviews);
+                                }}
+                              >
+                                ✕
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                        {imagePreviews.length < MAX_ANIMAL_PHOTOS && (
+                          <div>
+                            <Label htmlFor="image" className="cursor-pointer">
+                              <div className="flex items-center justify-center space-x-2 text-primary hover:text-primary/80">
+                                <Upload className="h-4 w-4" />
+                                <span>Add More Photos ({MAX_ANIMAL_PHOTOS - imagePreviews.length} remaining)</span>
+                              </div>
+                            </Label>
+                            <Input
+                              id="image"
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={handleImageUpload}
+                              className="hidden"
+                            />
+                          </div>
+                        )}
+                        {imagePreviews.length < MIN_ANIMAL_PHOTOS && (
+                          <p className="text-sm text-destructive">
+                            Please upload at least {MIN_ANIMAL_PHOTOS - imagePreviews.length} more photo(s)
+                          </p>
+                        )}
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -345,19 +434,20 @@ const AddAnimal = () => {
                           <Label htmlFor="image" className="cursor-pointer">
                             <div className="flex items-center justify-center space-x-2 text-primary hover:text-primary/80">
                               <Upload className="h-4 w-4" />
-                              <span>Upload Animal Photo</span>
+                              <span>Upload Animal Photos</span>
                             </div>
                           </Label>
                           <Input
                             id="image"
                             type="file"
                             accept="image/*"
+                            multiple
                             onChange={handleImageUpload}
                             className="hidden"
                           />
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Upload a clear photo of your animal (JPEG, PNG)
+                          Upload {MIN_ANIMAL_PHOTOS}-{MAX_ANIMAL_PHOTOS} clear photos of your animal (JPEG, PNG)
                         </p>
                       </div>
                     )}
@@ -512,23 +602,25 @@ const AddAnimal = () => {
 
                 {/* Vaccination Certificate Upload */}
                 <div className="space-y-2">
-                  <Label htmlFor="vaccination_image">Vaccination Certificate Photos</Label>
+                  <Label htmlFor="vaccination_image">
+                    Vaccination Certificate Photos <span className="text-muted-foreground font-normal">({vaccinationImagePreviews.length}/{MAX_VACCINATION_PHOTOS})</span>
+                  </Label>
                   <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
                     {vaccinationImagePreviews.length > 0 ? (
                       <div className="space-y-4">
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                           {vaccinationImagePreviews.map((preview, index) => (
                             <div key={index} className="relative">
                               <img 
                                 src={preview} 
                                 alt={`Vaccination certificate ${index + 1}`} 
-                                className="w-full h-32 object-cover rounded-lg"
+                                className="w-full h-24 object-cover rounded-lg"
                               />
                               <Button
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                className="absolute top-2 right-2 bg-background/80"
+                                className="absolute top-1 right-1 h-6 w-6 p-0 bg-background/80"
                                 onClick={() => {
                                   const newFiles = vaccinationImageFiles.filter((_, i) => i !== index);
                                   const newPreviews = vaccinationImagePreviews.filter((_, i) => i !== index);
@@ -541,22 +633,24 @@ const AddAnimal = () => {
                             </div>
                           ))}
                         </div>
-                        <div>
-                          <Label htmlFor="vaccination_image" className="cursor-pointer">
-                            <div className="flex items-center justify-center space-x-2 text-primary hover:text-primary/80">
-                              <Upload className="h-4 w-4" />
-                              <span>Add More Certificates</span>
-                            </div>
-                          </Label>
-                          <Input
-                            id="vaccination_image"
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleVaccinationImageUpload}
-                            className="hidden"
-                          />
-                        </div>
+                        {vaccinationImagePreviews.length < MAX_VACCINATION_PHOTOS && (
+                          <div>
+                            <Label htmlFor="vaccination_image" className="cursor-pointer">
+                              <div className="flex items-center justify-center space-x-2 text-primary hover:text-primary/80">
+                                <Upload className="h-4 w-4" />
+                                <span>Add More Certificates ({MAX_VACCINATION_PHOTOS - vaccinationImagePreviews.length} remaining)</span>
+                              </div>
+                            </Label>
+                            <Input
+                              id="vaccination_image"
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={handleVaccinationImageUpload}
+                              className="hidden"
+                            />
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="space-y-2">
@@ -578,7 +672,7 @@ const AddAnimal = () => {
                           />
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Upload vaccination certificates or medical records (multiple files allowed)
+                          Upload up to {MAX_VACCINATION_PHOTOS} vaccination certificates or medical records
                         </p>
                       </div>
                     )}
