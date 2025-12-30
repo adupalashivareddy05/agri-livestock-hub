@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Validation schemas
 const phoneSignInSchema = z.object({
-  phone: z.string().trim().regex(/^\+[0-9]{10,15}$/, "Phone number must start with + and country code (e.g., +919876543210)")
+  phone: z.string().trim().regex(/^[0-9]{10}$/, "Phone number must be exactly 10 digits")
 });
 
 const otpSchema = z.object({
@@ -26,7 +26,7 @@ const signUpSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters").max(128, "Password must be less than 128 characters"),
   username: z.string().trim().min(3, "Username must be at least 3 characters").max(50, "Username must be less than 50 characters").regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
   fullName: z.string().trim().min(1, "Full name is required").max(100, "Full name must be less than 100 characters"),
-  phoneNumber: z.string().trim().regex(/^\+[0-9]{10,15}$/, "Phone must start with + and country code (e.g., +919876543210)"),
+  phoneNumber: z.string().trim().regex(/^[0-9]{10}$/, "Phone number must be exactly 10 digits"),
   address: z.string().trim().max(500, "Address must be less than 500 characters").optional().or(z.literal('')),
   city: z.string().trim().max(100, "City must be less than 100 characters").optional().or(z.literal('')),
   state: z.string().trim().max(100, "State must be less than 100 characters").optional().or(z.literal('')),
@@ -75,7 +75,8 @@ const Auth = () => {
     }
 
     setLoading(true);
-    const { error } = await signInWithPhone(loginPhone);
+    const phoneWithCode = `+91${loginPhone}`;
+    const { error } = await signInWithPhone(phoneWithCode);
     
     if (error) {
       toast({
@@ -108,7 +109,8 @@ const Auth = () => {
     }
 
     setLoading(true);
-    const { error } = await verifyOtp(loginPhone, otp);
+    const phoneWithCode = `+91${loginPhone}`;
+    const { error } = await verifyOtp(phoneWithCode, otp);
     
     if (error) {
       toast({
@@ -154,10 +156,11 @@ const Auth = () => {
     setLoading(true);
     
     // Sign up the user
+    const phoneWithCode = `+91${phoneNumber}`;
     const { error: signUpError } = await signUp(email, password, {
       full_name: fullName,
       username: username,
-      phone_number: phoneNumber,
+      phone_number: phoneWithCode,
       address,
       city,
       state,
@@ -201,7 +204,7 @@ const Auth = () => {
             .from('profiles')
             .update({
               username: username,
-              phone_number: phoneNumber,
+              phone_number: phoneWithCode,
               address,
               city,
               state,
@@ -268,20 +271,22 @@ const Auth = () => {
                   <div className="space-y-2">
                     <Label htmlFor="signin-phone">Phone Number</Label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <span className="absolute left-3 top-3 text-sm text-muted-foreground">+91</span>
+                      <Phone className="absolute left-12 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="signin-phone"
                         type="tel"
-                        placeholder="+919876543210"
+                        placeholder="9876543210"
                         value={loginPhone}
-                        onChange={(e) => setLoginPhone(e.target.value)}
-                        className="pl-10"
+                        onChange={(e) => setLoginPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        className="pl-20"
                         required
                         disabled={otpSent}
+                        maxLength={10}
                       />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Include country code (e.g., +91 for India)
+                      Enter your 10-digit mobile number
                     </p>
                   </div>
                   
@@ -302,7 +307,7 @@ const Auth = () => {
                         />
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        OTP sent to {loginPhone}
+                        OTP sent to +91{loginPhone}
                       </p>
                     </div>
                   )}
@@ -446,19 +451,21 @@ const Auth = () => {
                   <div className="space-y-2">
                     <Label htmlFor="signup-phone">Phone Number *</Label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <span className="absolute left-3 top-3 text-sm text-muted-foreground">+91</span>
+                      <Phone className="absolute left-12 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="signup-phone"
                         type="tel"
-                        placeholder="+919876543210"
+                        placeholder="9876543210"
                         value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        className="pl-10"
+                        onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        className="pl-20"
                         required
+                        maxLength={10}
                       />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Include country code (e.g., +91 for India)
+                      Enter your 10-digit mobile number
                     </p>
                   </div>
 
