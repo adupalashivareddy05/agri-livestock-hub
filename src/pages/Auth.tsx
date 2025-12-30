@@ -260,42 +260,32 @@ const Auth = () => {
               <CardHeader>
                 <CardTitle>Sign In with Phone</CardTitle>
                 <CardDescription>
-                  {otpSent 
-                    ? "Enter the OTP sent to your phone." 
-                    : "We'll send you a verification code."}
+                  Enter your phone number to receive a verification code.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {!otpSent ? (
-                  <form onSubmit={handleSendOtp} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="signin-phone">Phone Number</Label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="signin-phone"
-                          type="tel"
-                          placeholder="+919876543210"
-                          value={loginPhone}
-                          onChange={(e) => setLoginPhone(e.target.value)}
-                          className="pl-10"
-                          required
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Include country code (e.g., +91 for India)
-                      </p>
+                <form onSubmit={otpSent ? handleVerifyOtp : handleSendOtp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-phone">Phone Number</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="signin-phone"
+                        type="tel"
+                        placeholder="+919876543210"
+                        value={loginPhone}
+                        onChange={(e) => setLoginPhone(e.target.value)}
+                        className="pl-10"
+                        required
+                        disabled={otpSent}
+                      />
                     </div>
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-gradient-primary" 
-                      disabled={loading}
-                    >
-                      {loading ? 'Sending OTP...' : 'Send OTP'}
-                    </Button>
-                  </form>
-                ) : (
-                  <form onSubmit={handleVerifyOtp} className="space-y-4">
+                    <p className="text-xs text-muted-foreground">
+                      Include country code (e.g., +91 for India)
+                    </p>
+                  </div>
+                  
+                  {otpSent && (
                     <div className="space-y-2">
                       <Label htmlFor="signin-otp">Enter OTP</Label>
                       <div className="relative">
@@ -311,27 +301,55 @@ const Auth = () => {
                           required
                         />
                       </div>
+                      <p className="text-xs text-muted-foreground">
+                        OTP sent to {loginPhone}
+                      </p>
                     </div>
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-gradient-primary" 
-                      disabled={loading}
-                    >
-                      {loading ? 'Verifying...' : 'Verify & Sign In'}
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="ghost"
-                      className="w-full"
-                      onClick={() => {
-                        setOtpSent(false);
-                        setOtp('');
-                      }}
-                    >
-                      Change Phone Number
-                    </Button>
-                  </form>
-                )}
+                  )}
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-gradient-primary" 
+                    disabled={loading}
+                  >
+                    {loading 
+                      ? (otpSent ? 'Verifying...' : 'Sending OTP...') 
+                      : (otpSent ? 'Verify & Sign In' : 'Send OTP')}
+                  </Button>
+                  
+                  {otpSent && (
+                    <div className="flex gap-2">
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          setOtpSent(false);
+                          setOtp('');
+                        }}
+                        disabled={loading}
+                      >
+                        Change Number
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="ghost"
+                        className="flex-1"
+                        onClick={handleSendOtp}
+                        disabled={loading}
+                      >
+                        Resend OTP
+                      </Button>
+                    </div>
+                  )}
+                </form>
+                
+                <div className="mt-4 p-3 bg-muted rounded-lg">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Note:</strong> Phone OTP login requires SMS provider configuration. 
+                    Contact support if you're unable to receive OTP.
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
