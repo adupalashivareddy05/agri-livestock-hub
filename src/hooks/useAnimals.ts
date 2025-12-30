@@ -23,7 +23,8 @@ interface Animal {
   updated_at: string;
   seller_profile?: {
     full_name?: string;
-    phone_number?: string;
+    city?: string;
+    state?: string;
   };
   images?: {
     image_url: string;
@@ -61,8 +62,8 @@ export const useAnimals = () => {
       
       if (sellerIds.length > 0) {
         const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, phone_number')
+          .from('public_profiles')
+          .select('user_id, full_name, city, state')
           .in('user_id', sellerIds);
         
         profiles = profilesData || [];

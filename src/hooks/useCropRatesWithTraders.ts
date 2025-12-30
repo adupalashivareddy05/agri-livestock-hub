@@ -19,7 +19,8 @@ type CropRateWithTrader = {
     specialization: string[] | null;
     user: {
       full_name: string | null;
-      phone_number: string | null;
+      city: string | null;
+      state: string | null;
     } | null;
   };
 };
@@ -71,8 +72,8 @@ export const useCropRatesWithTraders = () => {
 
       // Fetch profiles for all trader users
       const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, phone_number')
+        .from('public_profiles')
+        .select('user_id, full_name, city, state')
         .in('user_id', traderUserIds);
 
       // Transform data
@@ -98,7 +99,8 @@ export const useCropRatesWithTraders = () => {
             specialization: trader?.specialization || null,
             user: profile ? {
               full_name: profile.full_name,
-              phone_number: profile.phone_number
+              city: profile.city,
+              state: profile.state
             } : null
           }
         };
