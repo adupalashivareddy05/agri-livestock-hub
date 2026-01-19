@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Leaf, Mail, Lock, User, Phone, MapPin, ArrowLeft } from 'lucide-react';
+import { Leaf, Mail, Lock, User, Phone, MapPin, ArrowLeft, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 // Validation schemas
@@ -18,12 +18,8 @@ const emailSignInSchema = z.object({
   password: z.string().min(1, "Password is required")
 });
 
-const phoneSignInSchema = z.object({
-  phone: z.string().trim().regex(/^[0-9]{10}$/, "Phone number must be exactly 10 digits")
-});
-
-const otpSchema = z.object({
-  otp: z.string().trim().length(6, "OTP must be exactly 6 digits")
+const identifierSchema = z.object({
+  identifier: z.string().trim().min(1, "Email or username is required")
 });
 
 const signUpSchema = z.object({
@@ -54,13 +50,12 @@ const Auth = () => {
   // Login states
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  const [loginPhone, setLoginPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
+  const [loginIdentifier, setLoginIdentifier] = useState('');
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [loginMethod, setLoginMethod] = useState<'email' | 'magiclink'>('email');
   const [loading, setLoading] = useState(false);
 
-  const { signUp, signInWithEmail, signInWithPhone, verifyOtp, user } = useAuth();
+  const { signUp, signInWithEmail, signInWithMagicLink, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -101,10 +96,10 @@ const Auth = () => {
     setLoading(false);
   };
 
-  const handleSendOtp = async (e: React.FormEvent) => {
+  const handleSendMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const result = phoneSignInSchema.safeParse({ phone: loginPhone });
+    const result = identifierSchema.safeParse({ identifier: loginIdentifier });
     if (!result.success) {
       toast({
         title: "Validation Error",
@@ -115,52 +110,41 @@ const Auth = () => {
     }
 
     setLoading(true);
-    const phoneWithCode = `+91${loginPhone}`;
-    const { error } = await signInWithPhone(phoneWithCode);
+    
+    // Check if it's an email or username
+    let emailToUse = loginIdentifier;
+    
+    // If it's not an email format, assume it's a username and look it up
+    if (!loginIdentifier.includes('@')) {
+      const { data, error: lookupError } = await supabase.rpc('find_user_by_email_or_username', {
+        identifier: loginIdentifier
+      });
+      
+      if (lookupError || !data) {
+        toast({
+          title: "User Not Found",
+          description: "No account found with that email or username.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+      emailToUse = data;
+    }
+    
+    const { error } = await signInWithMagicLink(emailToUse);
     
     if (error) {
       toast({
-        title: "Failed to Send OTP",
+        title: "Failed to Send Link",
         description: error.message,
         variant: "destructive",
       });
     } else {
-      setOtpSent(true);
+      setMagicLinkSent(true);
       toast({
-        title: "OTP Sent!",
-        description: "Please check your phone for the verification code.",
-      });
-    }
-    setLoading(false);
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const result = otpSchema.safeParse({ otp });
-    if (!result.success) {
-      toast({
-        title: "Validation Error",
-        description: result.error.errors[0].message,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
-    const phoneWithCode = `+91${loginPhone}`;
-    const { error } = await verifyOtp(phoneWithCode, otp);
-    
-    if (error) {
-      toast({
-        title: "Verification Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Welcome!",
-        description: "You have successfully signed in.",
+        title: "Magic Link Sent!",
+        description: "Please check your email for the login link.",
       });
     }
     setLoading(false);
@@ -304,29 +288,27 @@ const Auth = () => {
                     className="flex-1"
                     onClick={() => {
                       setLoginMethod('email');
-                      setOtpSent(false);
-                      setOtp('');
+                      setMagicLinkSent(false);
                     }}
                   >
-                    <Mail className="h-4 w-4 mr-2" />
-                    Email
+                    <Lock className="h-4 w-4 mr-2" />
+                    Password
                   </Button>
                   <Button
                     type="button"
-                    variant={loginMethod === 'phone' ? 'default' : 'ghost'}
+                    variant={loginMethod === 'magiclink' ? 'default' : 'ghost'}
                     className="flex-1"
                     onClick={() => {
-                      setLoginMethod('phone');
-                      setOtpSent(false);
-                      setOtp('');
+                      setLoginMethod('magiclink');
+                      setMagicLinkSent(false);
                     }}
                   >
-                    <Phone className="h-4 w-4 mr-2" />
-                    Phone OTP
+                    <Send className="h-4 w-4 mr-2" />
+                    Email Link
                   </Button>
                 </div>
 
-                {/* Email Login */}
+                {/* Email/Password Login */}
                 {loginMethod === 'email' && (
                   <form onSubmit={handleEmailSignIn} className="space-y-4">
                     <div className="space-y-2">
@@ -369,95 +351,71 @@ const Auth = () => {
                   </form>
                 )}
 
-                {/* Phone OTP Login */}
-                {loginMethod === 'phone' && (
-                  <form onSubmit={otpSent ? handleVerifyOtp : handleSendOtp} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="signin-phone">Phone Number</Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-3 text-sm text-muted-foreground">+91</span>
-                        <Phone className="absolute left-12 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="signin-phone"
-                          type="tel"
-                          placeholder="9876543210"
-                          value={loginPhone}
-                          onChange={(e) => setLoginPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                          className="pl-20"
-                          required
-                          disabled={otpSent}
-                          maxLength={10}
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Enter your registered 10-digit mobile number
-                      </p>
-                    </div>
-                    
-                    {otpSent && (
-                      <div className="space-y-2">
-                        <Label htmlFor="signin-otp">Enter OTP</Label>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            id="signin-otp"
-                            type="text"
-                            placeholder="Enter 6-digit OTP"
-                            value={otp}
-                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                            className="pl-10"
-                            maxLength={6}
-                            required
-                          />
+                {/* Magic Link Login */}
+                {loginMethod === 'magiclink' && (
+                  <form onSubmit={handleSendMagicLink} className="space-y-4">
+                    {!magicLinkSent ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="login-identifier">Email or Username</Label>
+                          <div className="relative">
+                            <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="login-identifier"
+                              type="text"
+                              placeholder="Enter your email or username"
+                              value={loginIdentifier}
+                              onChange={(e) => setLoginIdentifier(e.target.value)}
+                              className="pl-10"
+                              required
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            We'll send a login link to your registered email
+                          </p>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          OTP sent to +91{loginPhone}
-                        </p>
-                      </div>
-                    )}
-                    
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-gradient-primary" 
-                      disabled={loading}
-                    >
-                      {loading 
-                        ? (otpSent ? 'Verifying...' : 'Sending OTP...') 
-                        : (otpSent ? 'Verify & Sign In' : 'Send OTP')}
-                    </Button>
-                    
-                    {otpSent && (
-                      <div className="flex gap-2">
                         <Button 
-                          type="button" 
-                          variant="outline"
-                          className="flex-1"
-                          onClick={() => {
-                            setOtpSent(false);
-                            setOtp('');
-                          }}
+                          type="submit" 
+                          className="w-full bg-gradient-primary" 
                           disabled={loading}
                         >
-                          Change Number
+                          {loading ? 'Sending...' : 'Send Login Link'}
                         </Button>
-                        <Button 
-                          type="button" 
-                          variant="ghost"
-                          className="flex-1"
-                          onClick={handleSendOtp}
-                          disabled={loading}
-                        >
-                          Resend OTP
-                        </Button>
+                      </>
+                    ) : (
+                      <div className="text-center space-y-4">
+                        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                          <Mail className="h-8 w-8 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-lg">Check your email!</h3>
+                          <p className="text-muted-foreground text-sm mt-1">
+                            We've sent a login link to your email address. Click the link to sign in.
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            type="button" 
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => {
+                              setMagicLinkSent(false);
+                              setLoginIdentifier('');
+                            }}
+                          >
+                            Try Different Email
+                          </Button>
+                          <Button 
+                            type="submit" 
+                            variant="ghost"
+                            className="flex-1"
+                            disabled={loading}
+                          >
+                            {loading ? 'Sending...' : 'Resend Link'}
+                          </Button>
+                        </div>
                       </div>
                     )}
-
-                    <div className="p-3 bg-muted rounded-lg">
-                      <p className="text-xs text-muted-foreground">
-                        <strong>Note:</strong> Phone OTP requires SMS provider configuration. 
-                        Use email login if unable to receive OTP.
-                      </p>
-                    </div>
                   </form>
                 )}
               </CardContent>
