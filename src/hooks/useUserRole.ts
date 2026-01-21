@@ -45,6 +45,7 @@ export const useUserRole = () => {
   const isBuyer = hasRole('buyer');
   const isFarmer = hasRole('farmer');
   const isTrader = hasRole('seasonal_trader') || hasRole('everyday_trader');
+  const isAdmin = hasRole('admin');
 
   return {
     roles,
@@ -55,6 +56,7 @@ export const useUserRole = () => {
     isBuyer,
     isFarmer,
     isTrader,
+    isAdmin,
     refetch: fetchUserRoles
   };
 };
