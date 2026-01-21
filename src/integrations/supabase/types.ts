@@ -225,6 +225,57 @@ export type Database = {
         }
         Relationships: []
       }
+      farmers: {
+        Row: {
+          created_at: string
+          crops_grown: string[] | null
+          district: string | null
+          id: string
+          is_verified: boolean
+          land_size_acres: number | null
+          location: string
+          pincode: string | null
+          state: string
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+          verified_by: string | null
+          village: string | null
+        }
+        Insert: {
+          created_at?: string
+          crops_grown?: string[] | null
+          district?: string | null
+          id?: string
+          is_verified?: boolean
+          land_size_acres?: number | null
+          location: string
+          pincode?: string | null
+          state: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+          verified_by?: string | null
+          village?: string | null
+        }
+        Update: {
+          created_at?: string
+          crops_grown?: string[] | null
+          district?: string | null
+          id?: string
+          is_verified?: boolean
+          land_size_acres?: number | null
+          location?: string
+          pincode?: string | null
+          state?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
+          village?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
@@ -267,11 +318,67 @@ export type Database = {
         }
         Relationships: []
       }
+      trader_contacts: {
+        Row: {
+          created_at: string
+          crop_rate_id: string | null
+          farmer_id: string
+          id: string
+          notes: string | null
+          status: string
+          trader_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          crop_rate_id?: string | null
+          farmer_id: string
+          id?: string
+          notes?: string | null
+          status?: string
+          trader_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          crop_rate_id?: string | null
+          farmer_id?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          trader_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trader_contacts_crop_rate_id_fkey"
+            columns: ["crop_rate_id"]
+            isOneToOne: false
+            referencedRelation: "crop_rates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trader_contacts_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trader_contacts_trader_id_fkey"
+            columns: ["trader_id"]
+            isOneToOne: false
+            referencedRelation: "traders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       traders: {
         Row: {
           business_name: string | null
           created_at: string
           id: string
+          is_verified: boolean
           license_number: string | null
           location: string
           operating_hours: string | null
@@ -279,11 +386,14 @@ export type Database = {
           trader_type: string
           updated_at: string
           user_id: string
+          verified_at: string | null
+          verified_by: string | null
         }
         Insert: {
           business_name?: string | null
           created_at?: string
           id?: string
+          is_verified?: boolean
           license_number?: string | null
           location: string
           operating_hours?: string | null
@@ -291,11 +401,14 @@ export type Database = {
           trader_type: string
           updated_at?: string
           user_id: string
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Update: {
           business_name?: string | null
           created_at?: string
           id?: string
+          is_verified?: boolean
           license_number?: string | null
           location?: string
           operating_hours?: string | null
@@ -303,6 +416,8 @@ export type Database = {
           trader_type?: string
           updated_at?: string
           user_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Relationships: []
       }
@@ -323,6 +438,45 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      verification_requests: {
+        Row: {
+          created_at: string
+          entity_id: string
+          id: string
+          rejection_reason: string | null
+          request_type: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          id?: string
+          rejection_reason?: string | null
+          request_type: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          id?: string
+          rejection_reason?: string | null
+          request_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

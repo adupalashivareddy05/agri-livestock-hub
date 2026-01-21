@@ -13,6 +13,9 @@ import Animals from './pages/Animals'
 import AddAnimal from './pages/AddAnimal'
 import Crops from './pages/Crops'
 import TraderRates from './pages/TraderRates'
+import FarmerRegistration from './pages/FarmerRegistration'
+import TraderRegistration from './pages/TraderRegistration'
+import AdminDashboard from './pages/AdminDashboard'
 import NotFound from './pages/NotFound'
 
 const queryClient = new QueryClient()
@@ -30,6 +33,9 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/add-animal" element={<AddAnimal />} />
               <Route path="/crops" element={<Crops />} />
               <Route path="/trader-rates" element={<TraderRates />} />
+              <Route path="/farmer-registration" element={<FarmerRegistration />} />
+              <Route path="/trader-registration" element={<TraderRegistration />} />
+              <Route path="/admin" element={<AdminDashboard />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           <Toaster />

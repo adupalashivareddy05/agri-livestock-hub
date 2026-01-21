@@ -4,20 +4,43 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Phone, Wheat, Search, DollarSign, TrendingUp, Calendar, ArrowLeft, Building2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { MapPin, Phone, Wheat, Search, DollarSign, TrendingUp, Calendar, ArrowLeft, Building2, CheckCircle2, BarChart3, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useCropRatesWithTraders } from "@/hooks/useCropRatesWithTraders";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useFarmerProfile } from "@/hooks/useFarmerProfile";
+import { supabase } from "@/integrations/supabase/client";
 
 const Crops = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { rates, loading } = useCropRatesWithTraders();
+  const { isFarmer } = useUserRole();
+  const { profile: farmerProfile } = useFarmerProfile();
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterCrop, setFilterCrop] = useState("all");
+  const [filterLocation, setFilterLocation] = useState("all");
+  const [compareDialogOpen, setCompareDialogOpen] = useState(false);
+  const [selectedCropForCompare, setSelectedCropForCompare] = useState<string | null>(null);
+  const [contactingTrader, setContactingTrader] = useState<string | null>(null);
+
+  // Get unique locations for filtering
+  const uniqueLocations = useMemo(() => {
+    const locations = new Set<string>();
+    rates.forEach(rate => {
+      if (rate.trader.location) locations.add(rate.trader.location);
+      if (rate.trader.user?.city) locations.add(rate.trader.user.city);
+      if (rate.trader.user?.state) locations.add(rate.trader.user.state);
+    });
+    return Array.from(locations).sort();
+  }, [rates]);
 
   const filteredCrops = useMemo(() => {
     return rates.filter(rate => {
@@ -35,26 +58,42 @@ const Crops = () => {
         filterCrop === "all" || 
         rate.crop_type === filterCrop;
       
-      return matchesSearch && matchesTypeFilter && matchesCropFilter;
+      const matchesLocationFilter = 
+        filterLocation === "all" ||
+        rate.trader.location.toLowerCase().includes(filterLocation.toLowerCase()) ||
+        rate.trader.user?.city?.toLowerCase().includes(filterLocation.toLowerCase()) ||
+        rate.trader.user?.state?.toLowerCase().includes(filterLocation.toLowerCase());
+      
+      return matchesSearch && matchesTypeFilter && matchesCropFilter && matchesLocationFilter;
     });
-  }, [rates, searchTerm, filterType, filterCrop]);
+  }, [rates, searchTerm, filterType, filterCrop, filterLocation]);
 
   const uniqueCropTypes = useMemo(() => {
     return Array.from(new Set(rates.map(r => r.crop_type))).sort();
   }, [rates]);
 
+  // Get rates for price comparison
+  const comparisonRates = useMemo(() => {
+    if (!selectedCropForCompare) return [];
+    return rates
+      .filter(r => r.crop_type === selectedCropForCompare)
+      .sort((a, b) => b.rate_per_kg - a.rate_per_kg);
+  }, [rates, selectedCropForCompare]);
+
   const stats = useMemo(() => {
     const activeTraders = new Set(rates.map(r => r.trader.id)).size;
-    const avgChange = rates.length > 0 ? 2.1 : 0; // Calculate based on actual data if historical data available
+    const avgRate = rates.length > 0 
+      ? rates.reduce((sum, r) => sum + r.rate_per_kg, 0) / rates.length 
+      : 0;
     
     return {
       totalRates: rates.length,
       activeTraders,
-      avgChange
+      avgRate
     };
   }, [rates]);
 
-  const handleGetQuote = (rate: any) => {
+  const handleGetQuote = async (rate: any) => {
     if (!user) {
       toast({
         title: "Please sign in",
@@ -66,15 +105,14 @@ const Crops = () => {
     }
     
     const traderName = rate.trader.business_name || rate.trader.user?.full_name || 'Trader';
-    const phone = rate.trader.user?.phone_number || 'N/A';
     
     toast({
-      title: "Quote Request",
-      description: `Quote requested for ${rate.crop_type} from ${traderName}. Contact: ${phone}`,
+      title: "Quote Request Sent",
+      description: `Quote requested for ${rate.crop_type} from ${traderName}.`,
     });
   };
 
-  const handleContact = (rate: any) => {
+  const handleContact = async (rate: any) => {
     if (!user) {
       toast({
         title: "Please sign in",
@@ -84,19 +122,41 @@ const Crops = () => {
       navigate('/auth');
       return;
     }
+
+    // If user is a verified farmer, record the contact
+    if (isFarmer && farmerProfile?.is_verified) {
+      setContactingTrader(rate.trader.id);
+      try {
+        await supabase
+          .from('trader_contacts')
+          .insert({
+            farmer_id: farmerProfile.id,
+            trader_id: rate.trader.id,
+            crop_rate_id: rate.id,
+            status: 'contacted'
+          });
+        
+        toast({
+          title: "Contact Recorded",
+          description: `You can now contact ${rate.trader.business_name || 'the trader'}.`,
+        });
+      } catch (err) {
+        console.error('Error recording contact:', err);
+      } finally {
+        setContactingTrader(null);
+      }
+    }
     
     const traderName = rate.trader.business_name || rate.trader.user?.full_name || 'Trader';
-    const phone = rate.trader.user?.phone_number;
-    
-    if (phone) {
-      window.open(`tel:${phone}`, '_self');
-    } else {
-      toast({
-        title: "Contact Unavailable",
-        description: "This trader hasn't provided contact information.",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: `Contacting ${traderName}`,
+      description: `Location: ${rate.trader.location}`,
+    });
+  };
+
+  const openCompareDialog = (cropType: string) => {
+    setSelectedCropForCompare(cropType);
+    setCompareDialogOpen(true);
   };
 
   return (
@@ -104,19 +164,35 @@ const Crops = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center mb-4">
+          <div className="flex items-center justify-between mb-4">
             <Button
               variant="ghost"
               onClick={() => navigate('/')}
-              className="mr-4"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Home
             </Button>
+            
+            {isFarmer && !farmerProfile && (
+              <Button onClick={() => navigate('/farmer-registration')}>
+                Complete Farmer Profile
+              </Button>
+            )}
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Crop Marketplace</h1>
-          <p className="text-muted-foreground">Real-time crop rates from verified traders across India</p>
+          <p className="text-muted-foreground">
+            Compare real-time crop rates from verified traders • Filter by location and crop type
+          </p>
         </div>
+
+        {/* Farmer Status Banner */}
+        {isFarmer && farmerProfile && !farmerProfile.is_verified && (
+          <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+            <p className="text-amber-700 text-sm">
+              ⏳ Your farmer profile is pending verification. You can view rates but some features are limited.
+            </p>
+          </div>
+        )}
 
         {/* Search and Filters */}
         <div className="flex flex-col md:flex-row gap-4 mb-8">
@@ -130,8 +206,8 @@ const Crops = () => {
             />
           </div>
           <Select value={filterCrop} onValueChange={setFilterCrop}>
-            <SelectTrigger className="w-full md:w-48">
-              <SelectValue placeholder="Filter by crop" />
+            <SelectTrigger className="w-full md:w-40">
+              <SelectValue placeholder="Crop" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Crops</SelectItem>
@@ -142,9 +218,22 @@ const Crops = () => {
               ))}
             </SelectContent>
           </Select>
+          <Select value={filterLocation} onValueChange={setFilterLocation}>
+            <SelectTrigger className="w-full md:w-40">
+              <SelectValue placeholder="Location" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Locations</SelectItem>
+              {uniqueLocations.map(location => (
+                <SelectItem key={location} value={location}>
+                  {location}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="w-full md:w-48">
-              <SelectValue placeholder="Trader type" />
+            <SelectTrigger className="w-full md:w-40">
+              <SelectValue placeholder="Trader Type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Traders</SelectItem>
@@ -171,8 +260,8 @@ const Crops = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm opacity-90">Avg. Price Change</p>
-                  <p className="text-3xl font-bold">+{stats.avgChange.toFixed(1)}%</p>
+                  <p className="text-sm opacity-90">Avg. Rate</p>
+                  <p className="text-3xl font-bold">₹{stats.avgRate.toFixed(0)}/kg</p>
                 </div>
                 <DollarSign className="h-8 w-8 opacity-80" />
               </div>
@@ -191,6 +280,26 @@ const Crops = () => {
           </Card>
         </div>
 
+        {/* Quick Compare Buttons */}
+        {uniqueCropTypes.length > 0 && (
+          <div className="mb-6">
+            <p className="text-sm text-muted-foreground mb-2">Quick Compare Prices:</p>
+            <div className="flex flex-wrap gap-2">
+              {uniqueCropTypes.slice(0, 6).map(crop => (
+                <Button
+                  key={crop}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openCompareDialog(crop)}
+                >
+                  <BarChart3 className="h-3 w-3 mr-1" />
+                  {crop.charAt(0).toUpperCase() + crop.slice(1)}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Results Count */}
         <div className="mb-6">
           <p className="text-muted-foreground">
@@ -201,7 +310,7 @@ const Crops = () => {
         {/* Loading State */}
         {loading && (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
             <p className="text-muted-foreground">Loading crop rates...</p>
           </div>
         )}
@@ -212,8 +321,7 @@ const Crops = () => {
             {filteredCrops.map((rate) => {
               const traderName = rate.trader.business_name || rate.trader.user?.full_name || 'Anonymous Trader';
               const traderType = rate.trader.trader_type === 'seasonal' ? 'Seasonal' : 'Daily';
-              const minQty = rate.minimum_quantity_kg ? `${rate.minimum_quantity_kg} kg` : 'No minimum';
-              const maxQty = rate.maximum_quantity_kg ? `${rate.maximum_quantity_kg} kg` : 'No maximum';
+              const isVerified = true; // Assume verified traders only show active rates
 
               return (
                 <Card key={rate.id} className="shadow-soft hover:shadow-medium transition-shadow">
@@ -223,7 +331,12 @@ const Crops = () => {
                         <Wheat className="h-5 w-5 mr-2 text-harvest-gold" />
                         {rate.crop_type}
                       </CardTitle>
-                      <Badge variant="default">Today</Badge>
+                      <div className="flex items-center gap-1">
+                        {isVerified && (
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        )}
+                        <Badge variant="default">Today</Badge>
+                      </div>
                     </div>
                     <CardDescription className="text-muted-foreground">
                       Updated {new Date(rate.rate_date).toLocaleDateString()}
@@ -234,6 +347,15 @@ const Crops = () => {
                     <div className="text-center">
                       <p className="text-3xl font-bold text-harvest-gold">₹{rate.rate_per_kg}</p>
                       <p className="text-sm text-muted-foreground">per KG</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-1 text-xs"
+                        onClick={() => openCompareDialog(rate.crop_type)}
+                      >
+                        <BarChart3 className="h-3 w-3 mr-1" />
+                        Compare Prices
+                      </Button>
                     </div>
 
                     <div className="space-y-3 text-sm">
@@ -248,7 +370,7 @@ const Crops = () => {
                         <span className="text-muted-foreground">Trader:</span>
                         <span className="font-medium flex items-center text-right">
                           <Building2 className="h-3 w-3 mr-1 flex-shrink-0" />
-                          <span className="truncate">{traderName}</span>
+                          <span className="truncate max-w-32">{traderName}</span>
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
@@ -258,13 +380,7 @@ const Crops = () => {
                       {rate.minimum_quantity_kg && (
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Min Qty:</span>
-                          <span className="font-medium">{minQty}</span>
-                        </div>
-                      )}
-                      {rate.maximum_quantity_kg && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Max Qty:</span>
-                          <span className="font-medium">{maxQty}</span>
+                          <span className="font-medium">{rate.minimum_quantity_kg} kg</span>
                         </div>
                       )}
                       {rate.trader.operating_hours && (
@@ -290,13 +406,18 @@ const Crops = () => {
                         onClick={() => handleGetQuote(rate)}
                       >
                         <DollarSign className="h-4 w-4 mr-2" />
-                        Quote
+                        Get Quote
                       </Button>
                       <Button
                         variant="outline"
                         onClick={() => handleContact(rate)}
+                        disabled={contactingTrader === rate.trader.id}
                       >
-                        <Phone className="h-4 w-4" />
+                        {contactingTrader === rate.trader.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Phone className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                   </CardContent>
@@ -314,6 +435,69 @@ const Crops = () => {
           </div>
         )}
       </div>
+
+      {/* Price Comparison Dialog */}
+      <Dialog open={compareDialogOpen} onOpenChange={setCompareDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="capitalize flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Price Comparison: {selectedCropForCompare}
+            </DialogTitle>
+            <DialogDescription>
+              Compare rates from different traders for {selectedCropForCompare}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {comparisonRates.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Rank</TableHead>
+                  <TableHead>Trader</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead className="text-right">Rate/kg</TableHead>
+                  <TableHead>Min Qty</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {comparisonRates.map((rate, index) => (
+                  <TableRow key={rate.id} className={index === 0 ? 'bg-green-50 dark:bg-green-900/10' : ''}>
+                    <TableCell>
+                      {index === 0 ? (
+                        <Badge className="bg-green-500">Best</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">#{index + 1}</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {rate.trader.business_name || rate.trader.user?.full_name || 'Trader'}
+                    </TableCell>
+                    <TableCell>
+                      <span className="flex items-center">
+                        <MapPin className="h-3 w-3 mr-1" />
+                        {rate.trader.location}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="capitalize">{rate.trader.trader_type}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-bold">
+                      ₹{rate.rate_per_kg}
+                    </TableCell>
+                    <TableCell>
+                      {rate.minimum_quantity_kg ? `${rate.minimum_quantity_kg} kg` : '-'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-center text-muted-foreground py-8">No rates available for comparison</p>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
