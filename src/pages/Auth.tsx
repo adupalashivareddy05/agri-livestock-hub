@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Leaf, Mail, Lock, User, Phone, MapPin, ArrowLeft, Send } from 'lucide-react';
+import { Leaf, Mail, Lock, User, Phone, MapPin, ArrowLeft, Send, KeyRound } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 // Validation schemas
@@ -52,10 +52,12 @@ const Auth = () => {
   const [loginPassword, setLoginPassword] = useState('');
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [magicLinkSent, setMagicLinkSent] = useState(false);
-  const [loginMethod, setLoginMethod] = useState<'email' | 'magiclink'>('email');
+  const [loginMethod, setLoginMethod] = useState<'email' | 'magiclink' | 'forgot'>('email');
+  const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { signUp, signInWithEmail, signInWithMagicLink, user } = useAuth();
+  const { signUp, signInWithEmail, signInWithMagicLink, resetPassword, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -145,6 +147,41 @@ const Auth = () => {
       toast({
         title: "Magic Link Sent!",
         description: "Please check your email for the login link.",
+      });
+    }
+    setLoading(false);
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const result = z.object({
+      email: z.string().trim().email("Invalid email address")
+    }).safeParse({ email: forgotEmail });
+    
+    if (!result.success) {
+      toast({
+        title: "Validation Error",
+        description: result.error.errors[0].message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await resetPassword(forgotEmail);
+    
+    if (error) {
+      toast({
+        title: "Failed to Send Reset Link",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setForgotPasswordSent(true);
+      toast({
+        title: "Reset Link Sent!",
+        description: "Please check your email for the password reset link.",
       });
     }
     setLoading(false);
@@ -289,6 +326,7 @@ const Auth = () => {
                     onClick={() => {
                       setLoginMethod('email');
                       setMagicLinkSent(false);
+                      setForgotPasswordSent(false);
                     }}
                   >
                     <Lock className="h-4 w-4 mr-2" />
@@ -301,6 +339,7 @@ const Auth = () => {
                     onClick={() => {
                       setLoginMethod('magiclink');
                       setMagicLinkSent(false);
+                      setForgotPasswordSent(false);
                     }}
                   >
                     <Send className="h-4 w-4 mr-2" />
@@ -348,6 +387,96 @@ const Auth = () => {
                     >
                       {loading ? 'Signing In...' : 'Sign In'}
                     </Button>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="w-full text-sm text-muted-foreground"
+                      onClick={() => {
+                        setLoginMethod('forgot');
+                        setForgotPasswordSent(false);
+                        setForgotEmail(loginEmail);
+                      }}
+                    >
+                      <KeyRound className="h-4 w-4 mr-1" />
+                      Forgot Password?
+                    </Button>
+                  </form>
+                )}
+
+                {/* Forgot Password */}
+                {loginMethod === 'forgot' && (
+                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                    {!forgotPasswordSent ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="forgot-email">Email Address</Label>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="forgot-email"
+                              type="email"
+                              placeholder="Enter your email address"
+                              value={forgotEmail}
+                              onChange={(e) => setForgotEmail(e.target.value)}
+                              className="pl-10"
+                              required
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            We'll send you a link to reset your password
+                          </p>
+                        </div>
+                        <Button 
+                          type="submit" 
+                          className="w-full bg-gradient-primary" 
+                          disabled={loading}
+                        >
+                          {loading ? 'Sending...' : 'Send Reset Link'}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="w-full"
+                          onClick={() => setLoginMethod('email')}
+                        >
+                          <ArrowLeft className="h-4 w-4 mr-2" />
+                          Back to Sign In
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="text-center space-y-4">
+                        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                          <Mail className="h-8 w-8 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-lg">Check your email!</h3>
+                          <p className="text-muted-foreground text-sm mt-1">
+                            We've sent a password reset link to <strong>{forgotEmail}</strong>
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            type="button" 
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => {
+                              setLoginMethod('email');
+                              setForgotPasswordSent(false);
+                            }}
+                          >
+                            Back to Sign In
+                          </Button>
+                          <Button 
+                            type="submit" 
+                            variant="ghost"
+                            className="flex-1"
+                            disabled={loading}
+                          >
+                            {loading ? 'Sending...' : 'Resend Link'}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </form>
                 )}
 
