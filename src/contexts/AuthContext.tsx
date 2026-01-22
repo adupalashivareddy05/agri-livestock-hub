@@ -9,6 +9,8 @@ interface AuthContextType {
   signUp: (email: string, password: string, metadata?: any) => Promise<{ error: any }>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: any }>;
   signInWithMagicLink: (email: string) => Promise<{ error: any }>;
+  resetPassword: (email: string) => Promise<{ error: any }>;
+  updatePassword: (newPassword: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
 }
 
@@ -87,6 +89,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error };
   };
 
+  const resetPassword = async (email: string) => {
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    return { error };
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    setLoading(false);
+    return { error };
+  };
+
   const signOut = async () => {
     setLoading(true);
     const { error } = await supabase.auth.signOut();
@@ -101,6 +121,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
     signInWithEmail,
     signInWithMagicLink,
+    resetPassword,
+    updatePassword,
     signOut,
   };
 
