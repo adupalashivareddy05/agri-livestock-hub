@@ -10,6 +10,7 @@ interface Animal {
   age_months?: number;
   price: number;
   location: string;
+  contact_number?: string;
   description?: string;
   milk_capacity_liters?: number;
   lactation_status?: string;
