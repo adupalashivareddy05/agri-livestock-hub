@@ -61,7 +61,7 @@ const Animals = () => {
     }
     
     const sellerName = animal.seller_profile?.full_name || 'Seller';
-    const phone = animal.seller_profile?.phone_number;
+    const phone = animal.contact_number;
     
     if (!phone) {
       toast({
@@ -72,12 +72,8 @@ const Animals = () => {
       return;
     }
 
-    // Create a more prominent display with phone number
-    toast({
-      title: `📞 Contact ${sellerName}`,
-      description: `Phone: ${phone}`,
-      duration: 8000,
-    });
+    // Open phone dialer
+    window.location.href = `tel:${phone}`;
   };
 
   const handleFavorite = (animalId: string) => {
@@ -273,13 +269,19 @@ const Animals = () => {
                     <p className="text-sm text-muted-foreground">
                       By {animal.seller_profile?.full_name || 'Seller'}
                     </p>
+                    {user && animal.contact_number && (
+                      <p className="text-sm text-muted-foreground flex items-center mt-1">
+                        <Phone className="h-3 w-3 mr-1" />
+                        {animal.contact_number}
+                      </p>
+                    )}
                   </div>
                   <Button 
                     className="bg-gradient-primary"
                     onClick={() => handleContact(animal)}
                   >
                     <Phone className="h-4 w-4 mr-2" />
-                    Contact
+                    Call
                   </Button>
                 </div>
               </CardContent>
