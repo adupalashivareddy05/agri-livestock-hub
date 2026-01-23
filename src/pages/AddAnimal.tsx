@@ -568,9 +568,10 @@ const AddAnimal = () => {
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="lactating">Lactating</SelectItem>
+                          <SelectItem value="high">High Yield</SelectItem>
+                          <SelectItem value="medium">Medium Yield</SelectItem>
+                          <SelectItem value="low">Low Yield</SelectItem>
                           <SelectItem value="dry">Dry</SelectItem>
-                          <SelectItem value="pregnant">Pregnant</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
