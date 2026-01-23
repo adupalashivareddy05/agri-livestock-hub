@@ -22,6 +22,7 @@ const animalSchema = z.object({
   age_years: z.number({ invalid_type_error: "Age must be a number" }).int().min(0).max(25, "Age seems unreasonably high").optional().nullable(),
   age_months: z.number({ invalid_type_error: "Age must be a number" }).int().min(0).max(11, "Months must be between 0-11").optional().nullable(),
   location: z.string().trim().min(1, "Location is required").max(200, "Location must be less than 200 characters"),
+  contact_number: z.string().trim().min(10, "Contact number must be at least 10 digits").max(15, "Contact number must be less than 15 digits").regex(/^[0-9+\-\s]+$/, "Invalid phone number format"),
   description: z.string().trim().max(2000, "Description must be less than 2000 characters").optional(),
   milk_capacity_liters: z.number({ invalid_type_error: "Milk capacity must be a number" }).positive("Milk capacity must be positive").max(100, "Milk capacity seems unreasonably high").optional().nullable(),
   body_height_cm: z.number({ invalid_type_error: "Height must be a number" }).positive("Height must be positive").max(500, "Height seems unreasonably high").optional().nullable(),
@@ -65,6 +66,7 @@ const AddAnimal = () => {
     age_months: '',
     price: '',
     location: '',
+    contact_number: '',
     description: '',
     milk_capacity_liters: '',
     lactation_status: '',
@@ -210,6 +212,7 @@ const AddAnimal = () => {
       age_years: formData.age_years ? parseInt(formData.age_years) : null,
       age_months: formData.age_months ? parseInt(formData.age_months) : null,
       location: formData.location,
+      contact_number: formData.contact_number,
       description: formData.description,
       milk_capacity_liters: formData.milk_capacity_liters ? parseInt(formData.milk_capacity_liters) : null,
       body_height_cm: formData.body_height_cm ? parseInt(formData.body_height_cm) : null,
@@ -254,6 +257,7 @@ const AddAnimal = () => {
           age_months: formData.age_months ? parseInt(formData.age_months) : null,
           price: parseFloat(formData.price),
           location: formData.location,
+          contact_number: formData.contact_number,
           description: formData.description,
           milk_capacity_liters: formData.milk_capacity_liters ? parseInt(formData.milk_capacity_liters) : null,
           lactation_status: formData.lactation_status as any || null,
@@ -543,6 +547,19 @@ const AddAnimal = () => {
                     value={formData.location}
                     onChange={(e) => handleInputChange('location', e.target.value)}
                     placeholder="e.g., Punjab, India"
+                    required
+                  />
+                </div>
+
+                {/* Contact Number */}
+                <div className="space-y-2">
+                  <Label htmlFor="contact_number">Contact Number *</Label>
+                  <Input
+                    id="contact_number"
+                    type="tel"
+                    value={formData.contact_number}
+                    onChange={(e) => handleInputChange('contact_number', e.target.value)}
+                    placeholder="e.g., +91 9876543210"
                     required
                   />
                 </div>

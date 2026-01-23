@@ -57,6 +57,7 @@ export type Database = {
           animal_type: Database["public"]["Enums"]["animal_type"]
           body_height_cm: number | null
           breed: string
+          contact_number: string | null
           created_at: string
           description: string | null
           father_breed: string | null
@@ -81,6 +82,7 @@ export type Database = {
           animal_type: Database["public"]["Enums"]["animal_type"]
           body_height_cm?: number | null
           breed: string
+          contact_number?: string | null
           created_at?: string
           description?: string | null
           father_breed?: string | null
@@ -105,6 +107,7 @@ export type Database = {
           animal_type?: Database["public"]["Enums"]["animal_type"]
           body_height_cm?: number | null
           breed?: string
+          contact_number?: string | null
           created_at?: string
           description?: string | null
           father_breed?: string | null
