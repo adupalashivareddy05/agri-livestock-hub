@@ -7,11 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Plus, Edit2, Trash2, Save, X } from "lucide-react";
+import { ArrowLeft, Plus, Edit2, Trash2, Save, X, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useTraderRates } from "@/hooks/useTraderRates";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useTraderProfile } from "@/hooks/useTraderProfile";
 import { Constants } from "@/integrations/supabase/types";
 
 // Validation schema
@@ -39,6 +40,7 @@ const TraderRates = () => {
   const { toast } = useToast();
   const { rates, loading, addRate, updateRate, deleteRate } = useTraderRates();
   const { isTrader, loading: roleLoading } = useUserRole();
+  const { profile: traderProfile, loading: profileLoading } = useTraderProfile();
   
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -50,7 +52,7 @@ const TraderRates = () => {
     notes: ''
   });
 
-  if (roleLoading) {
+  if (roleLoading || profileLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
@@ -60,6 +62,23 @@ const TraderRates = () => {
         <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
         <p className="text-muted-foreground mb-4">Only traders can access this page.</p>
         <Button onClick={() => navigate('/')}>Go Home</Button>
+      </div>
+    );
+  }
+
+  // Check if trader has completed profile registration
+  if (!traderProfile) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Complete Your Profile First</h2>
+        <p className="text-muted-foreground mb-6 text-center max-w-md">
+          You need to complete your trader profile before you can add crop rates. 
+          This helps farmers find and contact you.
+        </p>
+        <Button onClick={() => navigate('/trader-registration')} className="bg-gradient-primary">
+          Complete Trader Registration
+        </Button>
       </div>
     );
   }
