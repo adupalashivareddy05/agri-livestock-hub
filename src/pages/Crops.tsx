@@ -344,7 +344,8 @@ const Crops = () => {
                   </CardHeader>
                   
                   <CardContent className="space-y-4">
-                    <div className="text-center">
+                    {/* Price Section */}
+                    <div className="text-center py-2 bg-muted/30 rounded-lg">
                       <p className="text-3xl font-bold text-harvest-gold">₹{rate.rate_per_kg}</p>
                       <p className="text-sm text-muted-foreground">per KG</p>
                       <Button
@@ -358,41 +359,61 @@ const Crops = () => {
                       </Button>
                     </div>
 
-                    <div className="space-y-3 text-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Location:</span>
-                        <span className="font-medium flex items-center">
-                          <MapPin className="h-3 w-3 mr-1" />
-                          {rate.trader.location}
-                        </span>
+                    {/* Trader Details Section */}
+                    <div className="p-3 bg-primary/5 border border-primary/10 rounded-lg space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-primary flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-foreground truncate">{traderName}</p>
+                          {rate.trader.business_name && rate.trader.user?.full_name && (
+                            <p className="text-xs text-muted-foreground">Owner: {rate.trader.user.full_name}</p>
+                          )}
+                        </div>
+                        <Badge variant="outline" className="flex-shrink-0">{traderType}</Badge>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Trader:</span>
-                        <span className="font-medium flex items-center text-right">
-                          <Building2 className="h-3 w-3 mr-1 flex-shrink-0" />
-                          <span className="truncate max-w-32">{traderName}</span>
-                        </span>
+                      
+                      <div className="flex items-start gap-2 text-sm">
+                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="font-medium">{rate.trader.location}</p>
+                          {(rate.trader.user?.city || rate.trader.user?.state) && (
+                            <p className="text-xs text-muted-foreground">
+                              {[rate.trader.user?.city, rate.trader.user?.state].filter(Boolean).join(', ')}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Type:</span>
-                        <Badge variant="outline">{traderType}</Badge>
-                      </div>
-                      {rate.minimum_quantity_kg && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Min Qty:</span>
-                          <span className="font-medium">{rate.minimum_quantity_kg} kg</span>
+
+                      {rate.trader.operating_hours && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-muted-foreground">Hours:</span>
+                          <span className="font-medium">{rate.trader.operating_hours}</span>
                         </div>
                       )}
-                      {rate.trader.operating_hours && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Hours:</span>
-                          <span className="font-medium flex items-center">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            {rate.trader.operating_hours}
-                          </span>
+
+                      {rate.trader.specialization && rate.trader.specialization.length > 0 && (
+                        <div className="flex flex-wrap gap-1 pt-1">
+                          {rate.trader.specialization.slice(0, 3).map((spec, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-xs capitalize">
+                              {spec}
+                            </Badge>
+                          ))}
                         </div>
                       )}
                     </div>
+
+                    {/* Quantity Requirements */}
+                    {(rate.minimum_quantity_kg || rate.maximum_quantity_kg) && (
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        {rate.minimum_quantity_kg && (
+                          <span>Min: <span className="font-medium text-foreground">{rate.minimum_quantity_kg} kg</span></span>
+                        )}
+                        {rate.maximum_quantity_kg && (
+                          <span>Max: <span className="font-medium text-foreground">{rate.maximum_quantity_kg} kg</span></span>
+                        )}
+                      </div>
+                    )}
 
                     {rate.notes && (
                       <div className="text-xs text-muted-foreground border-t pt-3">
