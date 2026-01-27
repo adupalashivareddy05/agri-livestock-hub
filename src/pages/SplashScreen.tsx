@@ -1,94 +1,123 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import agriconnectLogo from "@/assets/agriconnect-logo.png";
 
 const SplashScreen = () => {
   const navigate = useNavigate();
-  const [showContent, setShowContent] = useState(false);
+  const [phase, setPhase] = useState<"entering" | "visible" | "exiting">("entering");
 
   useEffect(() => {
-    // Trigger animations after mount
-    const animationTimer = setTimeout(() => setShowContent(true), 100);
+    // Phase 1: Enter animation (0-1.5s)
+    const enterTimer = setTimeout(() => setPhase("visible"), 100);
     
-    // Redirect after 5 seconds
+    // Phase 2: Start exit animation after 7 seconds
+    const exitTimer = setTimeout(() => setPhase("exiting"), 7000);
+    
+    // Phase 3: Navigate after 8 seconds (1s for exit animation)
     const redirectTimer = setTimeout(() => {
       navigate("/home");
-    }, 5000);
+    }, 8000);
 
     return () => {
-      clearTimeout(animationTimer);
+      clearTimeout(enterTimer);
+      clearTimeout(exitTimer);
       clearTimeout(redirectTimer);
     };
   }, [navigate]);
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-b from-gray-950 via-gray-900 to-black flex flex-col items-center justify-center overflow-hidden">
-      {/* Cinematic overlay effects */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg viewBox=%220 0 256 256%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noise%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noise)%22 opacity=%220.03%22/%3E%3C/svg%3E')] opacity-50" />
+    <div 
+      className={`fixed inset-0 bg-black flex flex-col items-center justify-center overflow-hidden transition-opacity duration-1000 ${
+        phase === "exiting" ? "opacity-0" : "opacity-100"
+      }`}
+    >
+      {/* Subtle vignette effect */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_rgba(0,0,0,0.8)_100%)]" />
       
-      {/* Logo container with animations */}
-      <div 
-        className={`relative z-10 flex flex-col items-center transition-all duration-1500 ease-out ${
-          showContent 
-            ? "opacity-100 scale-100" 
-            : "opacity-0 scale-75"
-        }`}
-        style={{ transitionDuration: "1.5s" }}
-      >
-        {/* Logo placeholder - styled text logo */}
-        <div className="relative">
-          <div className="w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 rounded-full bg-gradient-to-br from-primary via-fresh-green to-emerald-600 flex items-center justify-center shadow-2xl shadow-primary/30">
-            <div className="w-28 h-28 md:w-44 md:h-44 lg:w-52 lg:h-52 rounded-full bg-gray-900 flex items-center justify-center">
-              <span className="text-3xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-primary via-fresh-green to-emerald-400 bg-clip-text text-transparent">
-                ARI
-              </span>
-            </div>
-          </div>
-          {/* Glow effect */}
-          <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl animate-pulse" />
-        </div>
-        
-        {/* App name */}
+      {/* Content container */}
+      <div className="relative z-10 flex flex-col items-center justify-center px-4">
+        {/* Title: AGRICONNECT */}
         <h1 
-          className={`mt-8 text-2xl md:text-4xl lg:text-5xl font-bold tracking-widest text-white transition-all duration-1000 delay-500 ${
-            showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+          className={`text-3xl md:text-5xl lg:text-6xl font-black tracking-[0.3em] md:tracking-[0.4em] text-white mb-8 md:mb-12 transition-all duration-[2000ms] ease-out ${
+            phase !== "entering" 
+              ? "opacity-100 translate-y-0" 
+              : "opacity-0 -translate-y-8"
           }`}
-          style={{ transitionDelay: "0.5s" }}
+          style={{ 
+            textShadow: "0 0 40px rgba(255,255,255,0.3), 0 0 80px rgba(255,255,255,0.1)",
+            transitionDelay: "300ms"
+          }}
         >
-          <span className="bg-gradient-to-r from-primary via-fresh-green to-emerald-400 bg-clip-text text-transparent">
-            ARI-CONNECT
-          </span>
+          AGRICONNECT
         </h1>
-      </div>
 
-      {/* Welcome text at bottom */}
-      <div 
-        className={`absolute bottom-16 md:bottom-20 left-0 right-0 flex justify-center transition-all duration-1000 ${
-          showContent ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-        }`}
-        style={{ transitionDelay: "1s" }}
-      >
-        <p className="text-sm md:text-lg lg:text-xl font-bold tracking-[0.2em] md:tracking-[0.3em] text-center px-4 animate-text-shimmer bg-gradient-to-r from-gray-400 via-white to-gray-400 bg-clip-text text-transparent bg-[length:200%_100%]">
+        {/* Logo with glow effect */}
+        <div 
+          className={`relative transition-all duration-[2500ms] ease-out ${
+            phase !== "entering" 
+              ? "opacity-100 scale-100" 
+              : "opacity-0 scale-75"
+          }`}
+          style={{ transitionDelay: "600ms" }}
+        >
+          {/* Outer glow */}
+          <div 
+            className="absolute inset-0 blur-3xl opacity-40 animate-pulse"
+            style={{
+              background: "radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%)",
+              transform: "scale(1.5)"
+            }}
+          />
+          
+          {/* Logo image */}
+          <img 
+            src={agriconnectLogo} 
+            alt="AGRICONNECT Logo" 
+            className="w-48 h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 object-contain relative z-10 drop-shadow-2xl"
+            style={{
+              filter: "invert(1) brightness(1.2) drop-shadow(0 0 30px rgba(255,255,255,0.5))"
+            }}
+          />
+          
+          {/* Inner glow ring */}
+          <div 
+            className="absolute inset-0 rounded-full opacity-30"
+            style={{
+              boxShadow: "0 0 60px 20px rgba(255,255,255,0.3), inset 0 0 60px 20px rgba(255,255,255,0.1)"
+            }}
+          />
+        </div>
+
+        {/* Welcome text */}
+        <p 
+          className={`mt-10 md:mt-14 text-sm md:text-lg lg:text-xl font-bold tracking-[0.2em] md:tracking-[0.3em] text-center text-white/90 transition-all duration-[2000ms] ease-out ${
+            phase !== "entering" 
+              ? "opacity-100 translate-y-0" 
+              : "opacity-0 translate-y-8"
+          }`}
+          style={{ 
+            textShadow: "0 0 20px rgba(255,255,255,0.3)",
+            transitionDelay: "1200ms"
+          }}
+        >
           SALAAR DEVARATHA RAISAR WELCOMES YOU
         </p>
       </div>
 
-      {/* Loading indicator */}
-      <div 
-        className={`absolute bottom-8 transition-all duration-1000 ${
-          showContent ? "opacity-100" : "opacity-0"
-        }`}
-        style={{ transitionDelay: "1.5s" }}
-      >
-        <div className="flex space-x-1">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="w-2 h-2 rounded-full bg-primary animate-bounce"
-              style={{ animationDelay: `${i * 0.15}s` }}
-            />
-          ))}
-        </div>
+      {/* Subtle particles/dust effect */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 bg-white/20 rounded-full animate-pulse"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 3}s`,
+              animationDuration: `${2 + Math.random() * 3}s`
+            }}
+          />
+        ))}
       </div>
     </div>
   );
