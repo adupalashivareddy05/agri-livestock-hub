@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/contexts/AuthContext'
 import './index.css'
 
+import SplashScreen from './pages/SplashScreen'
 import Index from './pages/Index'
 import Auth from './pages/Auth'
 import ResetPassword from './pages/ResetPassword'
@@ -27,7 +28,8 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <AuthProvider>
             <Routes>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<SplashScreen />} />
+              <Route path="/home" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/dashboard" element={<Dashboard />} />

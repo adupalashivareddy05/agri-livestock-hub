@@ -117,12 +117,21 @@ export default {
 					'100%': {
 						transform: 'translateX(-50%)'
 					}
+				},
+				'text-shimmer': {
+					'0%': {
+						backgroundPosition: '200% 50%'
+					},
+					'100%': {
+						backgroundPosition: '-200% 50%'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
-				'scroll-banner': 'scroll-banner 20s linear infinite'
+				'scroll-banner': 'scroll-banner 20s linear infinite',
+				'text-shimmer': 'text-shimmer 3s ease-in-out infinite'
 			}
 		}
 	},
