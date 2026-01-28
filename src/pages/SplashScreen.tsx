@@ -2,11 +2,31 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import agriconnectLogo from "@/assets/agriconnect-logo.png";
 
+const SPLASH_SHOWN_KEY = "agriconnect_splash_shown";
+
 const SplashScreen = () => {
   const navigate = useNavigate();
   const [phase, setPhase] = useState<"entering" | "visible" | "exiting">("entering");
+  const [shouldShowSplash, setShouldShowSplash] = useState(false);
 
   useEffect(() => {
+    // Check if splash was already shown this session
+    const splashShown = sessionStorage.getItem(SPLASH_SHOWN_KEY);
+    
+    if (splashShown) {
+      // Skip splash and go directly to home
+      navigate("/home", { replace: true });
+      return;
+    }
+
+    // Mark splash as shown for this session
+    sessionStorage.setItem(SPLASH_SHOWN_KEY, "true");
+    setShouldShowSplash(true);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!shouldShowSplash) return;
+
     // Phase 1: Enter animation (0-1.5s)
     const enterTimer = setTimeout(() => setPhase("visible"), 100);
     
@@ -15,7 +35,7 @@ const SplashScreen = () => {
     
     // Phase 3: Navigate after 8 seconds (1s for exit animation)
     const redirectTimer = setTimeout(() => {
-      navigate("/home");
+      navigate("/home", { replace: true });
     }, 8000);
 
     return () => {
@@ -23,7 +43,12 @@ const SplashScreen = () => {
       clearTimeout(exitTimer);
       clearTimeout(redirectTimer);
     };
-  }, [navigate]);
+  }, [navigate, shouldShowSplash]);
+
+  // Don't render anything if we're skipping the splash
+  if (!shouldShowSplash) {
+    return null;
+  }
 
   return (
     <div 
