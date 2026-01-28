@@ -19,6 +19,7 @@ import TraderRates from './pages/TraderRates'
 import FarmerRegistration from './pages/FarmerRegistration'
 import TraderRegistration from './pages/TraderRegistration'
 import AdminDashboard from './pages/AdminDashboard'
+import MarketDashboard from './pages/MarketDashboard'
 import NotFound from './pages/NotFound'
 
 const queryClient = new QueryClient()
@@ -42,6 +43,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/farmer-registration" element={<FarmerRegistration />} />
               <Route path="/trader-registration" element={<TraderRegistration />} />
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/market" element={<MarketDashboard />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           <Toaster />
