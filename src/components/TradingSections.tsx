@@ -185,7 +185,15 @@ const TradingSections = () => {
             ))}
           </div>
 
-          <div className="text-center">
+          <div className="text-center flex flex-wrap justify-center gap-4">
+            <Button 
+              size="lg" 
+              className="bg-gradient-primary"
+              onClick={() => navigate('/buy-animals')}
+            >
+              <Heart className="h-4 w-4 mr-2" />
+              Buy Animals
+            </Button>
             <Button 
               variant="outline" 
               size="lg" 

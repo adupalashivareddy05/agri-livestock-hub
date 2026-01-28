@@ -12,6 +12,7 @@ import Auth from './pages/Auth'
 import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import Animals from './pages/Animals'
+import BuyerAnimalDashboard from './pages/BuyerAnimalDashboard'
 import AddAnimal from './pages/AddAnimal'
 import Crops from './pages/Crops'
 import TraderRates from './pages/TraderRates'
@@ -34,6 +35,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/animals" element={<Animals />} />
+              <Route path="/buy-animals" element={<BuyerAnimalDashboard />} />
               <Route path="/add-animal" element={<AddAnimal />} />
               <Route path="/crops" element={<Crops />} />
               <Route path="/trader-rates" element={<TraderRates />} />
