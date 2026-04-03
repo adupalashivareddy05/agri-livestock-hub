@@ -512,10 +512,6 @@ export type Database = {
       }
     }
     Functions: {
-      find_user_by_email_or_username: {
-        Args: { identifier: string }
-        Returns: string
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
