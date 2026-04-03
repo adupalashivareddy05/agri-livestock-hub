@@ -187,6 +187,7 @@ const Auth = () => {
       });
     } else {
       setForgotPasswordSent(true);
+      startResendCooldown();
       toast({
         title: "Reset Link Sent!",
         description: "Please check your email for the password reset link.",
