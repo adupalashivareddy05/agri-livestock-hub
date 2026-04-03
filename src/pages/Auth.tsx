@@ -476,12 +476,16 @@ const Auth = () => {
                             Back to Sign In
                           </Button>
                           <Button 
-                            type="submit" 
+                            type="button" 
                             variant="ghost"
                             className="flex-1"
-                            disabled={loading}
+                            disabled={loading || resendCooldown > 0}
+                            onClick={async () => {
+                              setForgotPasswordSent(false);
+                              // Re-submit will happen via the form
+                            }}
                           >
-                            {loading ? 'Sending...' : 'Resend Link'}
+                            {loading ? 'Sending...' : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Link'}
                           </Button>
                         </div>
                       </div>
