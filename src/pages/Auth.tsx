@@ -56,6 +56,7 @@ const Auth = () => {
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const { signUp, signInWithEmail, signInWithMagicLink, resetPassword, user } = useAuth();
   const { toast } = useToast();
