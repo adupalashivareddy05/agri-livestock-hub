@@ -99,6 +99,20 @@ const Auth = () => {
     setLoading(false);
   };
 
+  // Start cooldown timer
+  const startResendCooldown = () => {
+    setResendCooldown(60);
+    const interval = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
   const handleSendMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -114,25 +128,17 @@ const Auth = () => {
 
     setLoading(true);
     
-    // Check if it's an email or username
+    // Only email-based magic link is supported now
     let emailToUse = loginIdentifier;
     
-    // If it's not an email format, assume it's a username and look it up
     if (!loginIdentifier.includes('@')) {
-      const { data, error: lookupError } = await supabase.rpc('find_user_by_email_or_username', {
-        identifier: loginIdentifier
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address to receive a magic link.",
+        variant: "destructive",
       });
-      
-      if (lookupError || !data) {
-        toast({
-          title: "User Not Found",
-          description: "No account found with that email or username.",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-      emailToUse = data;
+      setLoading(false);
+      return;
     }
     
     const { error } = await signInWithMagicLink(emailToUse);
@@ -145,6 +151,7 @@ const Auth = () => {
       });
     } else {
       setMagicLinkSent(true);
+      startResendCooldown();
       toast({
         title: "Magic Link Sent!",
         description: "Please check your email for the login link.",
