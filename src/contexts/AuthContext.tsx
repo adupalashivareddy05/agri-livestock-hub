@@ -50,15 +50,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
+  const getRedirectUrl = (path: string) => {
+    const publishedUrl = 'https://agri-livestock-hub.lovable.app';
+    const origin = window.location.hostname === 'localhost' 
+      ? publishedUrl 
+      : window.location.origin;
+    return `${origin}${path}`;
+  };
+
   const signUp = async (email: string, password: string, metadata: any = {}) => {
     setLoading(true);
-    const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl,
+        emailRedirectTo: getRedirectUrl('/'),
         data: metadata
       }
     });
@@ -82,7 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/`,
+        emailRedirectTo: getRedirectUrl('/'),
       },
     });
     setLoading(false);
@@ -92,7 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const resetPassword = async (email: string) => {
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: getRedirectUrl('/reset-password'),
     });
     setLoading(false);
     return { error };
