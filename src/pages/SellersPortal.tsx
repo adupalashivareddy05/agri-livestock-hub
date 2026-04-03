@@ -20,14 +20,34 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const SellersPortal = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("animals");
+  const { isSeller, loading: roleLoading } = useUserRole();
   
   const { animals: sellerAnimals, loading: sellerAnimalsLoading, deleteAnimal } = useSellerAnimals();
+
+  if (roleLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!isSeller) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <h2 className="text-xl font-semibold">Access Denied</h2>
+        <p className="text-muted-foreground">Only registered sellers can access this portal.</p>
+        <Button onClick={() => navigate('/')}>Go Home</Button>
+      </div>
+    );
+  }
 
   const handleAddAnimal = () => {
     navigate('/add-animal');
