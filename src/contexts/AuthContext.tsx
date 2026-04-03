@@ -89,10 +89,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error };
   };
 
+  const getRedirectUrl = (path: string) => {
+    const publishedUrl = 'https://agri-livestock-hub.lovable.app';
+    const origin = window.location.hostname === 'localhost' 
+      ? publishedUrl 
+      : window.location.origin;
+    return `${origin}${path}`;
+  };
+
   const resetPassword = async (email: string) => {
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: getRedirectUrl('/reset-password'),
     });
     setLoading(false);
     return { error };
