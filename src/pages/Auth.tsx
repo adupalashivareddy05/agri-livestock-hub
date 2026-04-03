@@ -551,9 +551,9 @@ const Auth = () => {
                             type="submit" 
                             variant="ghost"
                             className="flex-1"
-                            disabled={loading}
+                            disabled={loading || resendCooldown > 0}
                           >
-                            {loading ? 'Sending...' : 'Resend Link'}
+                            {loading ? 'Sending...' : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Link'}
                           </Button>
                         </div>
                       </div>
