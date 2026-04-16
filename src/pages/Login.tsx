@@ -76,7 +76,7 @@ const Login = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-2">
-            <Leaf className="h-10 w-10 text-green-600" />
+            <Leaf className="h-10 w-10 text-primary" />
           </div>
           <CardTitle className="text-2xl">Agri Livestock Hub</CardTitle>
           <CardDescription>Sign in or create an account</CardDescription>
