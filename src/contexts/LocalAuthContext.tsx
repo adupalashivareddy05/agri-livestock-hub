@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export interface LocalUser {
+  id: string;
   email: string;
   phone: string;
   password: string;
@@ -62,6 +63,7 @@ export const LocalAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (exists) return { error: 'User already exists with this email or phone' };
 
     const newUser: LocalUser = {
+      id: crypto.randomUUID(),
       email,
       phone,
       password: data.password,
