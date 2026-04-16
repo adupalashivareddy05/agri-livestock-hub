@@ -64,7 +64,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate('/dashboard');
     }
   }, [user, navigate]);
 
@@ -297,7 +297,7 @@ const Auth = () => {
       <Button
         variant="ghost"
         className="absolute top-4 left-4"
-        onClick={() => navigate('/')}
+        onClick={() => navigate('/dashboard')}
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
         Back to Home
