@@ -3,13 +3,12 @@ import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { Toaster } from "@/components/ui/toaster"
-import { AuthProvider } from '@/contexts/AuthContext'
+import { LocalAuthProvider } from '@/contexts/LocalAuthContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import './index.css'
 
+import Login from './pages/Login'
 import Index from './pages/Index'
-import Auth from './pages/Auth'
-import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import Animals from './pages/Animals'
 import BuyerAnimalDashboard from './pages/BuyerAnimalDashboard'
@@ -28,26 +27,25 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AuthProvider>
-            <Routes>
-              <Route path="/" element={<Navigate to="/auth" replace />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/home" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/animals" element={<ProtectedRoute><Animals /></ProtectedRoute>} />
-              <Route path="/buy-animals" element={<ProtectedRoute><BuyerAnimalDashboard /></ProtectedRoute>} />
-              <Route path="/add-animal" element={<ProtectedRoute><AddAnimal /></ProtectedRoute>} />
-              <Route path="/crops" element={<ProtectedRoute><Crops /></ProtectedRoute>} />
-              <Route path="/trader-rates" element={<ProtectedRoute><TraderRates /></ProtectedRoute>} />
-              <Route path="/farmer-registration" element={<ProtectedRoute><FarmerRegistration /></ProtectedRoute>} />
-              <Route path="/trader-registration" element={<ProtectedRoute><TraderRegistration /></ProtectedRoute>} />
-              <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-              <Route path="/market" element={<ProtectedRoute><MarketDashboard /></ProtectedRoute>} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+        <LocalAuthProvider>
+          <Routes>
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/home" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/animals" element={<ProtectedRoute><Animals /></ProtectedRoute>} />
+            <Route path="/buy-animals" element={<ProtectedRoute><BuyerAnimalDashboard /></ProtectedRoute>} />
+            <Route path="/add-animal" element={<ProtectedRoute><AddAnimal /></ProtectedRoute>} />
+            <Route path="/crops" element={<ProtectedRoute><Crops /></ProtectedRoute>} />
+            <Route path="/trader-rates" element={<ProtectedRoute><TraderRates /></ProtectedRoute>} />
+            <Route path="/farmer-registration" element={<ProtectedRoute><FarmerRegistration /></ProtectedRoute>} />
+            <Route path="/trader-registration" element={<ProtectedRoute><TraderRegistration /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/market" element={<ProtectedRoute><MarketDashboard /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
           <Toaster />
-        </AuthProvider>
+        </LocalAuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>,
