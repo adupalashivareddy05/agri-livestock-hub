@@ -1,10 +1,16 @@
-import React, { createContext, useContext } from 'react';
-import { useLocalAuth, LocalUser } from './LocalAuthContext';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType {
-  user: LocalUser | null;
-  session: null;
+  user: User | null;
+  session: Session | null;
   loading: boolean;
+  signUp: (email: string, password: string, metadata?: any) => Promise<{ error: any }>;
+  signInWithEmail: (email: string, password: string) => Promise<{ error: any }>;
+  signInWithMagicLink: (email: string) => Promise<{ error: any }>;
+  resetPassword: (email: string) => Promise<{ error: any }>;
+  updatePassword: (newPassword: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
 }
 
@@ -19,13 +25,112 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading, signOut } = useLocalAuth();
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const value: AuthContextType = {
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Auth state changed:', event, session);
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
+    );
+
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const getRedirectUrl = (path: string) => {
+    const publishedUrl = 'https://agri-livestock-hub.lovable.app';
+    const origin = window.location.hostname === 'localhost' 
+      ? publishedUrl 
+      : window.location.origin;
+    return `${origin}${path}`;
+  };
+
+  const signUp = async (email: string, password: string, metadata: any = {}) => {
+    setLoading(true);
+    
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: getRedirectUrl('/'),
+        data: metadata
+      }
+    });
+    
+    setLoading(false);
+    return { error };
+  };
+
+  const signInWithEmail = async (email: string, password: string) => {
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    setLoading(false);
+    return { error };
+  };
+
+  const signInWithMagicLink = async (email: string) => {
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: getRedirectUrl('/'),
+      },
+    });
+    setLoading(false);
+    return { error };
+  };
+
+  const resetPassword = async (email: string) => {
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: getRedirectUrl('/reset-password'),
+    });
+    setLoading(false);
+    return { error };
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    setLoading(false);
+    return { error };
+  };
+
+  const signOut = async () => {
+    setLoading(true);
+    const { error } = await supabase.auth.signOut();
+    setLoading(false);
+    return { error };
+  };
+
+  const value = {
     user,
-    session: null,
+    session,
     loading,
-    signOut: async () => { signOut(); return { error: null }; },
+    signUp,
+    signInWithEmail,
+    signInWithMagicLink,
+    resetPassword,
+    updatePassword,
+    signOut,
   };
 
   return (
