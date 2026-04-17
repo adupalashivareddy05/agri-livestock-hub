@@ -30,6 +30,7 @@ const SellersPortal = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("animals");
   const { isSeller, loading: roleLoading } = useUserRole();
+  const [galleryAnimal, setGalleryAnimal] = useState<any | null>(null);
   
   const { animals: sellerAnimals, loading: sellerAnimalsLoading, deleteAnimal } = useSellerAnimals();
 
