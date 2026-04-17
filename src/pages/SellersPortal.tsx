@@ -347,6 +347,13 @@ const SellersPortal = () => {
           </CardContent>
         </Card>
       </div>
+
+      <AnimalImageGallery
+        open={!!galleryAnimal}
+        onOpenChange={(open) => !open && setGalleryAnimal(null)}
+        title={galleryAnimal ? `${galleryAnimal.animal_type} - ${galleryAnimal.breed}` : ''}
+        images={galleryAnimal?.images}
+      />
     </div>
   );
 };
