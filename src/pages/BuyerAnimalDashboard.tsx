@@ -208,12 +208,23 @@ const BuyerAnimalDashboard = () => {
                 className="overflow-hidden shadow-soft hover:shadow-medium transition-all duration-300 hover:-translate-y-1"
               >
                 {/* Image Section */}
-                <div className="relative h-40 md:h-48 overflow-hidden bg-muted">
+                <div className="relative h-40 md:h-48 overflow-hidden bg-muted group">
                   <img 
                     src={getImageUrl(animal)} 
                     alt={`${animal.animal_type} - ${animal.breed}`}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
+                    onClick={() => setGalleryAnimal(animal)}
                   />
+                  {animal.images && animal.images.length > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className="absolute bottom-2 right-2 bg-background/80 backdrop-blur cursor-pointer"
+                      onClick={() => setGalleryAnimal(animal)}
+                    >
+                      <ImageIcon className="h-3 w-3 mr-1" />
+                      {animal.images.length} photo{animal.images.length > 1 ? 's' : ''}
+                    </Badge>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
