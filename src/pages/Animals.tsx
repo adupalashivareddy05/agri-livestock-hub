@@ -19,6 +19,7 @@ const Animals = () => {
   const { animals, loading, error } = useAnimals();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
+  const [galleryAnimal, setGalleryAnimal] = useState<any | null>(null);
 
   const filteredAnimals = animals.filter(animal => {
     const matchesSearch = animal.animal_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -298,6 +299,13 @@ const Animals = () => {
           </div>
         )}
       </div>
+
+      <AnimalImageGallery
+        open={!!galleryAnimal}
+        onOpenChange={(open) => !open && setGalleryAnimal(null)}
+        title={galleryAnimal ? `${galleryAnimal.animal_type} - ${galleryAnimal.breed}` : ''}
+        images={galleryAnimal?.images}
+      />
     </div>
   );
 };
