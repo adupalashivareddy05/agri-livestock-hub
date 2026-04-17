@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Phone, Star, Heart, Search, Filter, ArrowLeft, Plus } from "lucide-react";
+import { MapPin, Phone, Star, Heart, Search, Filter, ArrowLeft, Plus, ImageIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAnimals } from "@/hooks/useAnimals";
+import AnimalImageGallery from "@/components/AnimalImageGallery";
 import holsteinCow from "@/assets/holstein-cow.jpg";
 
 const Animals = () => {
