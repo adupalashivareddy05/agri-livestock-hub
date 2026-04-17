@@ -214,6 +214,33 @@ const SellersPortal = () => {
                     <Card key={animal.id} className="shadow-soft hover:shadow-medium transition-shadow">
                       <CardContent className="p-6">
                         <div className="flex flex-col md:flex-row justify-between gap-4">
+                          {/* Image thumbnail */}
+                          <div className="md:w-40 flex-shrink-0">
+                            {animal.images && animal.images.length > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => setGalleryAnimal(animal)}
+                                className="relative w-full h-32 md:h-32 rounded-lg overflow-hidden bg-muted group"
+                              >
+                                <img
+                                  src={animal.images[0].image_url}
+                                  alt={`${animal.animal_type} ${animal.breed}`}
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                                  <Badge variant="secondary" className="bg-background/90">
+                                    <ImageIcon className="h-3 w-3 mr-1" />
+                                    {animal.images.length}
+                                  </Badge>
+                                </div>
+                              </button>
+                            ) : (
+                              <div className="w-full h-32 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
+                                <ImageIcon className="h-8 w-8 opacity-50" />
+                              </div>
+                            )}
+                          </div>
+
                           <div className="flex-1">
                             <div className="flex items-center space-x-3 mb-3">
                               <h3 className="text-lg font-semibold text-foreground">
@@ -267,6 +294,15 @@ const SellersPortal = () => {
                           </div>
                           
                           <div className="flex md:flex-col gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 md:flex-none"
+                              onClick={() => setGalleryAnimal(animal)}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Photos
+                            </Button>
                             <Button
                               variant="outline"
                               size="sm"
