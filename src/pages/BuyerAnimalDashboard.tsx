@@ -24,6 +24,7 @@ const BuyerAnimalDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterGender, setFilterGender] = useState("all");
+  const [galleryAnimal, setGalleryAnimal] = useState<any | null>(null);
 
   const filteredAnimals = animals.filter(animal => {
     const matchesSearch = animal.animal_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
