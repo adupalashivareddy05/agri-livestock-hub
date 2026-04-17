@@ -195,18 +195,29 @@ const Animals = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAnimals.map((animal) => (
             <Card key={animal.id} className="overflow-hidden shadow-soft hover:shadow-medium transition-shadow">
-              <div className="relative h-48 overflow-hidden">
+              <div className="relative h-48 overflow-hidden group">
                 <img 
                   src={getImageUrl(animal)} 
                   alt={`${animal.animal_type} - ${animal.breed}`}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
+                  onClick={() => setGalleryAnimal(animal)}
                 />
+                {animal.images && animal.images.length > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className="absolute bottom-2 right-2 bg-background/80 backdrop-blur cursor-pointer"
+                    onClick={() => setGalleryAnimal(animal)}
+                  >
+                    <ImageIcon className="h-3 w-3 mr-1" />
+                    {animal.images.length} photo{animal.images.length > 1 ? 's' : ''}
+                  </Badge>
+                )}
                 <div className="absolute top-2 right-2 flex items-center space-x-2">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleFavorite(animal.id)}
-                    className="bg-white/80 hover:bg-white/90"
+                    className="bg-background/80 hover:bg-background/90"
                   >
                     <Heart className="h-4 w-4" />
                   </Button>
