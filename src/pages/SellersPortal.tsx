@@ -15,12 +15,14 @@ import {
   ArrowLeft,
   Eye,
   MessageSquare,
-  Package
+  Package,
+  ImageIcon
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import { useUserRole } from "@/hooks/useUserRole";
+import AnimalImageGallery from "@/components/AnimalImageGallery";
 
 const SellersPortal = () => {
   const { user } = useAuth();
