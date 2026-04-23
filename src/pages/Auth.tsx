@@ -414,6 +414,29 @@ const Auth = () => {
                 {/* Email/Password Login */}
                 {loginMethod === 'email' && (
                   <form onSubmit={handleEmailSignIn} className="space-y-4">
+                    {unconfirmedEmail && (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription className="space-y-2">
+                          <p>
+                            Your email <strong>{unconfirmedEmail}</strong> is not verified yet.
+                            Check your inbox for the verification link.
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleResendConfirmation}
+                            disabled={loading || resendCooldown > 0}
+                          >
+                            <Send className="h-3 w-3 mr-2" />
+                            {resendCooldown > 0
+                              ? `Resend in ${resendCooldown}s`
+                              : 'Resend confirmation email'}
+                          </Button>
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     <div className="space-y-2">
                       <Label htmlFor="login-email">Email</Label>
                       <div className="relative">
@@ -423,7 +446,12 @@ const Auth = () => {
                           type="email"
                           placeholder="Enter your email"
                           value={loginEmail}
-                          onChange={(e) => setLoginEmail(e.target.value)}
+                          onChange={(e) => {
+                            setLoginEmail(e.target.value);
+                            if (unconfirmedEmail && e.target.value !== unconfirmedEmail) {
+                              setUnconfirmedEmail(null);
+                            }
+                          }}
                           className="pl-10"
                           required
                         />
