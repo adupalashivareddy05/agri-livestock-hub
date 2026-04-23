@@ -334,13 +334,13 @@ const Auth = () => {
 
         toast({
           title: "Account Created!",
-          description: "You can now sign in with your email and password.",
+          description: "Please check your email and click the verification link before signing in.",
         });
       } catch (error) {
         console.error('Error in signup process:', error);
         toast({
           title: "Account Created!",
-          description: "You can now sign in with your email and password.",
+          description: "Please check your email and click the verification link before signing in.",
         });
       }
       setLoading(false);
