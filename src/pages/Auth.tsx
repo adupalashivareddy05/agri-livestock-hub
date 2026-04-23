@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,9 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Leaf, Mail, Lock, User, Phone, MapPin, ArrowLeft, Send, KeyRound } from 'lucide-react';
+import { Leaf, Mail, Lock, User, Phone, MapPin, ArrowLeft, Send, KeyRound, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 // Validation schemas
@@ -57,16 +58,34 @@ const Auth = () => {
   const [forgotEmail, setForgotEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
 
-  const { signUp, signInWithEmail, signInWithMagicLink, resetPassword, user } = useAuth();
+  const { signUp, signInWithEmail, signInWithMagicLink, resetPassword, resendConfirmation, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate('/home');
     }
   }, [user, navigate]);
+
+  // Show feedback when arriving from email verification redirect
+  useEffect(() => {
+    if (searchParams.get('verified') === '1') {
+      toast({
+        title: 'Email verified!',
+        description: 'Your email is confirmed. Please sign in to continue.',
+      });
+    } else if (searchParams.get('error') === 'verification_failed') {
+      toast({
+        title: 'Verification link expired',
+        description: 'Please sign in and request a new confirmation email if needed.',
+        variant: 'destructive',
+      });
+    }
+  }, [searchParams, toast]);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
