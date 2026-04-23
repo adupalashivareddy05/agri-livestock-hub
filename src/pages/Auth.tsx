@@ -101,18 +101,54 @@ const Auth = () => {
     }
 
     setLoading(true);
+    setUnconfirmedEmail(null);
     const { error } = await signInWithEmail(loginEmail, loginPassword);
     
     if (error) {
-      toast({
-        title: "Sign In Failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      const msg = (error.message || '').toLowerCase();
+      const isNotConfirmed =
+        msg.includes('email not confirmed') ||
+        msg.includes('not confirmed') ||
+        (error as any).code === 'email_not_confirmed';
+
+      if (isNotConfirmed) {
+        setUnconfirmedEmail(loginEmail);
+        toast({
+          title: 'Email not verified',
+          description: 'Please check your inbox for the verification email, or click "Resend" below.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Sign In Failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
     } else {
       toast({
         title: "Welcome!",
         description: "You have successfully signed in.",
+      });
+    }
+    setLoading(false);
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!unconfirmedEmail || resendCooldown > 0) return;
+    setLoading(true);
+    const { error } = await resendConfirmation(unconfirmedEmail);
+    if (error) {
+      toast({
+        title: 'Failed to resend',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      startResendCooldown();
+      toast({
+        title: 'Confirmation email sent',
+        description: `We sent a new verification link to ${unconfirmedEmail}.`,
       });
     }
     setLoading(false);
