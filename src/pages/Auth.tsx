@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
 import { Leaf, Mail, Lock, User, Phone, MapPin, ArrowLeft, Send, KeyRound, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,15 +62,16 @@ const Auth = () => {
   const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
 
   const { signUp, signInWithEmail, signInWithMagicLink, resetPassword, resendConfirmation, user } = useAuth();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    if (user) {
-      navigate('/home');
+    if (user && !roleLoading) {
+      navigate(isAdmin ? '/admin' : '/home');
     }
-  }, [user, navigate]);
+  }, [user, isAdmin, roleLoading, navigate]);
 
   // Show feedback when arriving from email verification redirect
   useEffect(() => {
