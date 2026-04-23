@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import agriconnectLogo from "@/assets/agriconnect-logo.png";
+import { supabase } from "@/integrations/supabase/client";
 
 const SPLASH_SHOWN_KEY = "agriconnect_splash_shown";
 
@@ -10,6 +11,52 @@ const SplashScreen = () => {
   const [shouldShowSplash, setShouldShowSplash] = useState(false);
 
   useEffect(() => {
+    // If Supabase redirected here after email verification / magic link,
+    // the URL hash contains tokens like #access_token=...&type=signup.
+    // We must let Supabase establish the session BEFORE navigating away,
+    // otherwise the hash is lost and the user sees "email not confirmed".
+    const hash = window.location.hash;
+    const search = window.location.search;
+    const hasAuthTokens =
+      hash.includes("access_token=") ||
+      hash.includes("type=recovery") ||
+      hash.includes("type=signup") ||
+      hash.includes("type=magiclink") ||
+      search.includes("code=") ||
+      hash.includes("error=") ||
+      search.includes("error=");
+
+    if (hasAuthTokens) {
+      const isRecovery = hash.includes("type=recovery");
+      const hasError = hash.includes("error=") || search.includes("error=");
+
+      // Wait for Supabase to detect the session from URL, then route appropriately.
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+        if (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "PASSWORD_RECOVERY") {
+          subscription.unsubscribe();
+          sessionStorage.setItem(SPLASH_SHOWN_KEY, "true");
+          if (isRecovery || event === "PASSWORD_RECOVERY") {
+            navigate("/reset-password", { replace: true });
+          } else {
+            navigate("/home", { replace: true });
+          }
+        }
+      });
+
+      // Fallback: if Supabase couldn't establish a session within 4s,
+      // send the user to the auth page so they can sign in / resend.
+      const fallback = setTimeout(() => {
+        subscription.unsubscribe();
+        sessionStorage.setItem(SPLASH_SHOWN_KEY, "true");
+        navigate(hasError ? "/auth?error=verification_failed" : "/auth?verified=1", { replace: true });
+      }, 4000);
+
+      return () => {
+        subscription.unsubscribe();
+        clearTimeout(fallback);
+      };
+    }
+
     // Check if splash was already shown this session
     const splashShown = sessionStorage.getItem(SPLASH_SHOWN_KEY);
     
