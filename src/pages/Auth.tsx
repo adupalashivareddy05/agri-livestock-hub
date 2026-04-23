@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,9 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Leaf, Mail, Lock, User, Phone, MapPin, ArrowLeft, Send, KeyRound } from 'lucide-react';
+import { Leaf, Mail, Lock, User, Phone, MapPin, ArrowLeft, Send, KeyRound, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 // Validation schemas
@@ -57,16 +58,34 @@ const Auth = () => {
   const [forgotEmail, setForgotEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
 
-  const { signUp, signInWithEmail, signInWithMagicLink, resetPassword, user } = useAuth();
+  const { signUp, signInWithEmail, signInWithMagicLink, resetPassword, resendConfirmation, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate('/home');
     }
   }, [user, navigate]);
+
+  // Show feedback when arriving from email verification redirect
+  useEffect(() => {
+    if (searchParams.get('verified') === '1') {
+      toast({
+        title: 'Email verified!',
+        description: 'Your email is confirmed. Please sign in to continue.',
+      });
+    } else if (searchParams.get('error') === 'verification_failed') {
+      toast({
+        title: 'Verification link expired',
+        description: 'Please sign in and request a new confirmation email if needed.',
+        variant: 'destructive',
+      });
+    }
+  }, [searchParams, toast]);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,18 +101,54 @@ const Auth = () => {
     }
 
     setLoading(true);
+    setUnconfirmedEmail(null);
     const { error } = await signInWithEmail(loginEmail, loginPassword);
     
     if (error) {
-      toast({
-        title: "Sign In Failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      const msg = (error.message || '').toLowerCase();
+      const isNotConfirmed =
+        msg.includes('email not confirmed') ||
+        msg.includes('not confirmed') ||
+        (error as any).code === 'email_not_confirmed';
+
+      if (isNotConfirmed) {
+        setUnconfirmedEmail(loginEmail);
+        toast({
+          title: 'Email not verified',
+          description: 'Please check your inbox for the verification email, or click "Resend" below.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Sign In Failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
     } else {
       toast({
         title: "Welcome!",
         description: "You have successfully signed in.",
+      });
+    }
+    setLoading(false);
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!unconfirmedEmail || resendCooldown > 0) return;
+    setLoading(true);
+    const { error } = await resendConfirmation(unconfirmedEmail);
+    if (error) {
+      toast({
+        title: 'Failed to resend',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      startResendCooldown();
+      toast({
+        title: 'Confirmation email sent',
+        description: `We sent a new verification link to ${unconfirmedEmail}.`,
       });
     }
     setLoading(false);
@@ -279,13 +334,13 @@ const Auth = () => {
 
         toast({
           title: "Account Created!",
-          description: "You can now sign in with your email and password.",
+          description: "Please check your email and click the verification link before signing in.",
         });
       } catch (error) {
         console.error('Error in signup process:', error);
         toast({
           title: "Account Created!",
-          description: "You can now sign in with your email and password.",
+          description: "Please check your email and click the verification link before signing in.",
         });
       }
       setLoading(false);
@@ -359,6 +414,29 @@ const Auth = () => {
                 {/* Email/Password Login */}
                 {loginMethod === 'email' && (
                   <form onSubmit={handleEmailSignIn} className="space-y-4">
+                    {unconfirmedEmail && (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription className="space-y-2">
+                          <p>
+                            Your email <strong>{unconfirmedEmail}</strong> is not verified yet.
+                            Check your inbox for the verification link.
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleResendConfirmation}
+                            disabled={loading || resendCooldown > 0}
+                          >
+                            <Send className="h-3 w-3 mr-2" />
+                            {resendCooldown > 0
+                              ? `Resend in ${resendCooldown}s`
+                              : 'Resend confirmation email'}
+                          </Button>
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     <div className="space-y-2">
                       <Label htmlFor="login-email">Email</Label>
                       <div className="relative">
@@ -368,7 +446,12 @@ const Auth = () => {
                           type="email"
                           placeholder="Enter your email"
                           value={loginEmail}
-                          onChange={(e) => setLoginEmail(e.target.value)}
+                          onChange={(e) => {
+                            setLoginEmail(e.target.value);
+                            if (unconfirmedEmail && e.target.value !== unconfirmedEmail) {
+                              setUnconfirmedEmail(null);
+                            }
+                          }}
                           className="pl-10"
                           required
                         />
