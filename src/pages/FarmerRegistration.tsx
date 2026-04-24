@@ -110,6 +110,28 @@ const FarmerRegistration = () => {
 
     setSubmitting(true);
     try {
+      // Save farmer name & phone to profiles (linked to logged-in user)
+      if (user?.id) {
+        const phoneWithCode = `+91${formData.phone_number}`;
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            full_name: formData.farmer_name.trim(),
+            phone_number: phoneWithCode,
+          })
+          .eq('user_id', user.id);
+
+        if (profileError) {
+          toast({
+            title: 'Failed to save personal details',
+            description: profileError.message,
+            variant: 'destructive',
+          });
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const data = {
         location: formData.location,
         village: formData.village || undefined,
@@ -125,6 +147,11 @@ const FarmerRegistration = () => {
       } else {
         await createProfile(data);
       }
+
+      toast({
+        title: 'Saved successfully',
+        description: 'Your farmer details have been saved.',
+      });
     } finally {
       setSubmitting(false);
     }
