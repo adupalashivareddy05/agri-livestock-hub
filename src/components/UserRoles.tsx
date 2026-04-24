@@ -8,6 +8,16 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
+// Map UI role labels to database enum values. Admin is intentionally excluded —
+// it cannot be self-assigned and must be granted manually in the database.
+const ROLE_MAPPING: Record<string, Database['public']['Enums']['app_role']> = {
+  'Seller': 'seller',
+  'Buyer': 'buyer',
+  'Farmer': 'farmer',
+  'Seasonal Trader': 'seasonal_trader',
+  'Daily Trader': 'everyday_trader',
+};
+
 const UserRoles = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -15,85 +25,80 @@ const UserRoles = () => {
   const [loading, setLoading] = useState(false);
 
   const handleJoinRole = async (role: string) => {
-    if (!user) {
+    // Admin cannot be joined via UI — redirect to auth with no role.
+    if (role === 'Admin') {
       toast({
-        title: "Please sign in",
-        description: "You need to sign in to join as a role",
-        variant: "destructive",
+        title: 'Admin access',
+        description: 'Admin role is granted manually. Please sign in to your admin account.',
       });
       navigate('/auth');
       return;
     }
-    
+
+    const dbRole = ROLE_MAPPING[role];
+    if (!dbRole) return;
+
+    // Not signed in → send to auth, pass role so signup/login can assign it after.
+    if (!user) {
+      toast({
+        title: 'Please sign in',
+        description: `Sign in or create an account to join as ${role}.`,
+      });
+      navigate(`/auth?role=${dbRole}`);
+      return;
+    }
+
     setLoading(true);
-    
-    // Map UI role names to database enum values
-    const roleMapping: Record<string, Database['public']['Enums']['app_role']> = {
-      'Seller': 'seller',
-      'Buyer': 'buyer',
-      'Admin': 'admin',
-      'Farmer': 'farmer',
-      'Seasonal Trader': 'seasonal_trader',
-      'Daily Trader': 'everyday_trader'
-    };
-    
-    const dbRole = roleMapping[role];
-    
     try {
-      // Check if user already has this role
       const { data: existingRole } = await supabase
         .from('user_roles')
         .select('id')
         .eq('user_id', user.id)
         .eq('role', dbRole)
         .maybeSingle();
-      
-      if (existingRole) {
-        toast({
-          title: "Already Assigned",
-          description: `You already have the ${role} role!`,
-        });
-        setLoading(false);
-        navigate('/dashboard');
-        return;
+
+      if (!existingRole) {
+        const { error } = await supabase
+          .from('user_roles')
+          .insert([{ user_id: user.id, role: dbRole }]);
+
+        if (error) {
+          toast({
+            title: 'Role Assignment Failed',
+            description: error.message,
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
       }
-      
-      // Insert the role
-      const { error } = await supabase
-        .from('user_roles')
-        .insert([{
-          user_id: user.id,
-          role: dbRole
-        }]);
-      
-      if (error) {
-        console.error('Error adding role:', error);
-        toast({
-          title: "Role Assignment Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-      
+
       toast({
-        title: "Success!",
-        description: `You've joined as ${role}! Redirecting to dashboard...`,
+        title: 'Success!',
+        description: `You've joined as ${role}. Redirecting...`,
       });
-      
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1500);
+
+      setTimeout(() => navigate(getDashboardForRole(dbRole)), 800);
     } catch (err) {
       console.error('Error:', err);
       toast({
-        title: "Error",
-        description: "Failed to assign role. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to assign role. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getDashboardForRole = (role: Database['public']['Enums']['app_role']) => {
+    switch (role) {
+      case 'farmer': return '/farmer-registration';
+      case 'seasonal_trader':
+      case 'everyday_trader': return '/trader-registration';
+      case 'seller': return '/sellers-portal';
+      case 'buyer': return '/animals';
+      default: return '/home';
     }
   };
   const animalRoles = [

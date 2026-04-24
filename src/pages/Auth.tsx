@@ -67,18 +67,71 @@ const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
+  // Role passed from "Join as <role>" buttons. Admin is never accepted via URL.
+  const ALLOWED_URL_ROLES = ['farmer', 'seller', 'buyer', 'seasonal_trader', 'everyday_trader'];
+  const requestedRole = (() => {
+    const r = searchParams.get('role');
+    return r && ALLOWED_URL_ROLES.includes(r) ? r : '';
+  })();
+  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>(requestedRole ? 'signup' : 'signin');
+
+  // Prefill the signup role selector when arriving from a "Join as" button.
   useEffect(() => {
-    if (user && !roleLoading) {
+    if (requestedRole && !userRole) {
+      setUserRole(requestedRole);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedRole]);
+
+  const dashboardForRole = (role: string | null | undefined) => {
+    switch (role) {
+      case 'farmer': return '/farmer-registration';
+      case 'seasonal_trader':
+      case 'everyday_trader': return '/trader-registration';
+      case 'seller': return '/sellers-portal';
+      case 'buyer': return '/animals';
+      default: return '/home';
+    }
+  };
+
+  // After login, ensure the requested role is assigned (skip admin), then redirect.
+  useEffect(() => {
+    if (!user || roleLoading) return;
+
+    const finishRedirect = () => {
       const redirect = searchParams.get('redirect');
       if (isAdmin) {
         navigate('/admin');
       } else if (redirect) {
         navigate(redirect);
+      } else if (requestedRole) {
+        navigate(dashboardForRole(requestedRole));
       } else {
         navigate('/home');
       }
+    };
+
+    if (requestedRole) {
+      // Assign role if not already present, then redirect.
+      (async () => {
+        const { data: existing } = await supabase
+          .from('user_roles')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('role', requestedRole as any)
+          .maybeSingle();
+        if (!existing) {
+          await supabase.from('user_roles').insert({
+            user_id: user.id,
+            role: requestedRole as any,
+          });
+        }
+        finishRedirect();
+      })();
+    } else {
+      finishRedirect();
     }
-  }, [user, isAdmin, roleLoading, navigate, searchParams]);
+  }, [user, isAdmin, roleLoading, navigate, searchParams, requestedRole]);
 
   // Show feedback when arriving from email verification redirect
   useEffect(() => {
@@ -375,7 +428,7 @@ const Auth = () => {
           <p className="text-muted-foreground">Agricultural Marketplace</p>
         </div>
 
-        <Tabs defaultValue="signin" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'signin' | 'signup')} className="space-y-4">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="signin">Sign In</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
