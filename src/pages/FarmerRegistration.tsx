@@ -11,9 +11,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useFarmerProfile } from '@/hooks/useFarmerProfile';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, MapPin, Leaf, CheckCircle2, Clock, Loader2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Leaf, CheckCircle2, Clock, Loader2, User, Phone } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const farmerSchema = z.object({
+  farmer_name: z.string().trim().min(1, "Farmer name is required").max(100, "Name must be less than 100 characters"),
+  phone_number: z.string().trim().regex(/^[0-9]{10}$/, "Phone number must be exactly 10 digits"),
   location: z.string().trim().min(1, "Location is required").max(200, "Location must be less than 200 characters"),
   village: z.string().trim().max(100, "Village must be less than 100 characters").optional().or(z.literal('')),
   district: z.string().trim().max(100, "District must be less than 100 characters").optional().or(z.literal('')),
@@ -31,6 +34,8 @@ const FarmerRegistration = () => {
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
+    farmer_name: '',
+    phone_number: '',
     location: '',
     village: '',
     district: '',
@@ -58,6 +63,8 @@ const FarmerRegistration = () => {
   useEffect(() => {
     if (profile) {
       setFormData({
+        farmer_name: prev => prev as any, // placeholder, replaced below
+        phone_number: '',
         location: profile.location || '',
         village: profile.village || '',
         district: profile.district || '',
@@ -65,9 +72,29 @@ const FarmerRegistration = () => {
         pincode: profile.pincode || '',
         land_size_acres: profile.land_size_acres?.toString() || '',
         crops_grown: profile.crops_grown?.join(', ') || ''
-      });
+      } as any);
     }
   }, [profile]);
+
+  // Load farmer name & phone from profiles table (linked by user_id)
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (!user?.id) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name, phone_number')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (data) {
+        setFormData(prev => ({
+          ...prev,
+          farmer_name: data.full_name || '',
+          phone_number: (data.phone_number || '').replace(/^\+91/, ''),
+        }));
+      }
+    };
+    loadUserProfile();
+  }, [user?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
