@@ -428,7 +428,7 @@ const Auth = () => {
           <p className="text-muted-foreground">Agricultural Marketplace</p>
         </div>
 
-        <Tabs defaultValue="signin" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'signin' | 'signup')} className="space-y-4">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="signin">Sign In</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
