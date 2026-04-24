@@ -62,17 +62,16 @@ const FarmerRegistration = () => {
 
   useEffect(() => {
     if (profile) {
-      setFormData({
-        farmer_name: prev => prev as any, // placeholder, replaced below
-        phone_number: '',
+      setFormData(prev => ({
+        ...prev,
         location: profile.location || '',
         village: profile.village || '',
         district: profile.district || '',
         state: profile.state || '',
         pincode: profile.pincode || '',
         land_size_acres: profile.land_size_acres?.toString() || '',
-        crops_grown: profile.crops_grown?.join(', ') || ''
-      } as any);
+        crops_grown: profile.crops_grown?.join(', ') || '',
+      }));
     }
   }, [profile]);
 
