@@ -43,7 +43,7 @@ const FarmerRegistration = () => {
 
   useEffect(() => {
     if (!roleLoading && !user) {
-      navigate('/auth');
+      navigate('/auth?redirect=/farmer-registration');
     }
     if (!roleLoading && user && !isFarmer) {
       toast({

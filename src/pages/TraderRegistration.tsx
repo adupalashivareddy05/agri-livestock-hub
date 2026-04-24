@@ -49,7 +49,7 @@ const TraderRegistration = () => {
 
   useEffect(() => {
     if (!roleLoading && !user) {
-      navigate('/auth');
+      navigate('/auth?redirect=/trader-registration');
     }
     if (!roleLoading && user && !isTrader) {
       toast({

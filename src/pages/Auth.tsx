@@ -69,9 +69,16 @@ const Auth = () => {
 
   useEffect(() => {
     if (user && !roleLoading) {
-      navigate(isAdmin ? '/admin' : '/home');
+      const redirect = searchParams.get('redirect');
+      if (isAdmin) {
+        navigate('/admin');
+      } else if (redirect) {
+        navigate(redirect);
+      } else {
+        navigate('/home');
+      }
     }
-  }, [user, isAdmin, roleLoading, navigate]);
+  }, [user, isAdmin, roleLoading, navigate, searchParams]);
 
   // Show feedback when arriving from email verification redirect
   useEffect(() => {

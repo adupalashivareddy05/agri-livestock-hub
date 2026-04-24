@@ -27,6 +27,18 @@ const Header = () => {
     }
   };
 
+  const handleProtectedNav = (path: string, label: string) => {
+    if (!user) {
+      toast({
+        title: "Login required",
+        description: `Please sign in to access ${label}.`,
+      });
+      navigate(`/auth?redirect=${encodeURIComponent(path)}`);
+      return;
+    }
+    navigate(path);
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -57,21 +69,21 @@ const Header = () => {
             <Wheat className="h-4 w-4 mr-2" />
             Crops
           </Button>
-          {user && isFarmer && (
-            <Button 
-              variant="ghost" 
+          {(!user || isFarmer) && (
+            <Button
+              variant="ghost"
               className="text-muted-foreground hover:text-foreground"
-              onClick={() => navigate('/farmer-registration')}
+              onClick={() => handleProtectedNav('/farmer-registration', 'My Farm')}
             >
               <Sprout className="h-4 w-4 mr-2" />
               My Farm
             </Button>
           )}
-          {user && isTrader && (
-            <Button 
-              variant="ghost" 
+          {(!user || isTrader) && (
+            <Button
+              variant="ghost"
               className="text-muted-foreground hover:text-foreground"
-              onClick={() => navigate('/trader-registration')}
+              onClick={() => handleProtectedNav('/trader-registration', 'My Business')}
             >
               <Store className="h-4 w-4 mr-2" />
               My Business
