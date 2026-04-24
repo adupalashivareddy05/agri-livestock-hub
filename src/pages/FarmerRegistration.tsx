@@ -215,6 +215,42 @@ const FarmerRegistration = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="farmer_name">Farmer Name *</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="farmer_name"
+                      placeholder="Enter your full name"
+                      value={formData.farmer_name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, farmer_name: e.target.value }))}
+                      className="pl-10"
+                      maxLength={100}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone_number">Phone Number *</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-3 text-sm text-muted-foreground">+91</span>
+                    <Phone className="absolute left-12 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="phone_number"
+                      type="tel"
+                      inputMode="numeric"
+                      placeholder="9876543210"
+                      value={formData.phone_number}
+                      onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+                      className="pl-20"
+                      maxLength={10}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="location">Location / Address *</Label>
                 <Input
