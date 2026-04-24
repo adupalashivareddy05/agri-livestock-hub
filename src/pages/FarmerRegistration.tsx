@@ -11,9 +11,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useFarmerProfile } from '@/hooks/useFarmerProfile';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, MapPin, Leaf, CheckCircle2, Clock, Loader2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Leaf, CheckCircle2, Clock, Loader2, User, Phone } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const farmerSchema = z.object({
+  farmer_name: z.string().trim().min(1, "Farmer name is required").max(100, "Name must be less than 100 characters"),
+  phone_number: z.string().trim().regex(/^[0-9]{10}$/, "Phone number must be exactly 10 digits"),
   location: z.string().trim().min(1, "Location is required").max(200, "Location must be less than 200 characters"),
   village: z.string().trim().max(100, "Village must be less than 100 characters").optional().or(z.literal('')),
   district: z.string().trim().max(100, "District must be less than 100 characters").optional().or(z.literal('')),
@@ -31,6 +34,8 @@ const FarmerRegistration = () => {
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
+    farmer_name: '',
+    phone_number: '',
     location: '',
     village: '',
     district: '',
@@ -57,17 +62,38 @@ const FarmerRegistration = () => {
 
   useEffect(() => {
     if (profile) {
-      setFormData({
+      setFormData(prev => ({
+        ...prev,
         location: profile.location || '',
         village: profile.village || '',
         district: profile.district || '',
         state: profile.state || '',
         pincode: profile.pincode || '',
         land_size_acres: profile.land_size_acres?.toString() || '',
-        crops_grown: profile.crops_grown?.join(', ') || ''
-      });
+        crops_grown: profile.crops_grown?.join(', ') || '',
+      }));
     }
   }, [profile]);
+
+  // Load farmer name & phone from profiles table (linked by user_id)
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (!user?.id) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name, phone_number')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (data) {
+        setFormData(prev => ({
+          ...prev,
+          farmer_name: data.full_name || '',
+          phone_number: (data.phone_number || '').replace(/^\+91/, ''),
+        }));
+      }
+    };
+    loadUserProfile();
+  }, [user?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +110,28 @@ const FarmerRegistration = () => {
 
     setSubmitting(true);
     try {
+      // Save farmer name & phone to profiles (linked to logged-in user)
+      if (user?.id) {
+        const phoneWithCode = `+91${formData.phone_number}`;
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            full_name: formData.farmer_name.trim(),
+            phone_number: phoneWithCode,
+          })
+          .eq('user_id', user.id);
+
+        if (profileError) {
+          toast({
+            title: 'Failed to save personal details',
+            description: profileError.message,
+            variant: 'destructive',
+          });
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const data = {
         location: formData.location,
         village: formData.village || undefined,
@@ -99,6 +147,11 @@ const FarmerRegistration = () => {
       } else {
         await createProfile(data);
       }
+
+      toast({
+        title: 'Saved successfully',
+        description: 'Your farmer details have been saved.',
+      });
     } finally {
       setSubmitting(false);
     }
@@ -162,6 +215,42 @@ const FarmerRegistration = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="farmer_name">Farmer Name *</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="farmer_name"
+                      placeholder="Enter your full name"
+                      value={formData.farmer_name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, farmer_name: e.target.value }))}
+                      className="pl-10"
+                      maxLength={100}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone_number">Phone Number *</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-3 text-sm text-muted-foreground">+91</span>
+                    <Phone className="absolute left-12 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="phone_number"
+                      type="tel"
+                      inputMode="numeric"
+                      placeholder="9876543210"
+                      value={formData.phone_number}
+                      onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+                      className="pl-20"
+                      maxLength={10}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="location">Location / Address *</Label>
                 <Input
